@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: bronze
+    schema: bronze
+    description: "Tầng Bronze trên ClickHouse chứa dữ liệu raw GH Archive được nạp trực tiếp từ file Parquet trên MinIO."
+    tables:
+      - name: gharchive_events
+        description: "Bảng raw lưu toàn bộ sự kiện GitHub theo giờ."
+        columns:
+          - name: event_id
+            description: "Mã định danh duy nhất của sự kiện GitHub"
+          - name: event_type
+            description: "Loại sự kiện (PushEvent, WatchEvent, PullRequestEvent, IssuesEvent, ...)"
+          - name: public
+            description: "Trạng thái public của repository"
+          - name: created_at
+            description: "Thời gian phát sinh sự kiện (ISO-8601 UTC string)"
+          - name: actor_id
+            description: "ID người dùng thực hiện hành động"
+          - name: actor_login
+            description: "Username GitHub của người dùng"
+          - name: repo_id
+            description: "ID của repository"
+          - name: repo_name
+            description: "Tên đầy đủ của repository (owner/repo)"
+          - name: org_id
+            description: "ID của tổ chức (nếu có)"
+          - name: org_login
+            description: "Tên tổ chức (nếu có)"
+          - name: payload_json
+            description: "Chuỗi JSON nguyên bản chứa chi tiết sự kiện"
+          - name: _source_file
+            description: "Tên file Parquet nguồn"
+          - name: _ingested_at
+            description: "Thời điểm nạp dữ liệu vào ClickHouse Bronze"
+

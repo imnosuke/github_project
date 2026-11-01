@@ -1,0 +1,25 @@
+# Airflow logs & temporary data
+airflow/logs/
+airflow/data/
+
+# dbt build artifacts & logs
+dbt_gharchive/target/
+dbt_gharchive/logs/
+dbt_gharchive/dbt_packages/
+
+# Python cache & virtual environments
+**/__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Environment variables (bỏ dấu # ở dòng dưới nếu không muốn đẩy file .env lên GitHub)
+# .env
+
+# OS & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+

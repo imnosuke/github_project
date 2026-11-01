@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: stg_gharchive_events
+    description: "Tầng Silver: Dữ liệu sự kiện GitHub đã được khử trùng lặp, chuẩn hóa kiểu thời gian, tách thông tin chủ sở hữu repo và giải nén các trường JSON quan trọng."
+    columns:
+      - name: event_id
+        description: "ID duy nhất của sự kiện"
+        tests:
+          - not_null
+      - name: event_type
+        description: "Loại sự kiện GitHub"
+        tests:
+          - not_null
+      - name: event_timestamp
+        description: "Thời gian sự kiện kiểu DateTime UTC"
+      - name: event_date
+        description: "Ngày diễn ra sự kiện (YYYY-MM-DD)"
+      - name: actor_login
+        description: "Username người thực hiện sự kiện"
+      - name: is_bot
+        description: "Cờ đánh dấu tài khoản tự động ([bot])"
+      - name: repo_full_name
+        description: "Tên đầy đủ của repo (owner/repo)"
+      - name: action
+        description: "Hành động chi tiết trích xuất từ payload JSON (opened, closed, started, created...)"
+      - name: push_commit_count
+        description: "Số lượng commit trong một lần PushEvent"
+

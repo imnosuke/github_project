@@ -1,0 +1,187 @@
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: gharchive-airflow:latest
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@airflow-db/${POSTGRES_DB:-airflow}
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    PYTHONPATH: '/opt/airflow:/opt/airflow/scripts'
+    # Tự động đăng ký Airflow Connection 'minio_s3' trỏ về MinIO container
+    AIRFLOW_CONN_MINIO_S3: 'aws://${MINIO_ROOT_USER:-minioadmin}:${MINIO_ROOT_PASSWORD:-minioadmin}@/?endpoint_url=http%3A%2F%2Fminio%3A9000&region_name=us-east-1'
+    _AIRFLOW_WWW_USER_CREATE: 'true'
+    _AIRFLOW_WWW_USER_USERNAME: '${AIRFLOW_WWW_USER_USERNAME:-airflow}'
+    _AIRFLOW_WWW_USER_PASSWORD: '${AIRFLOW_WWW_USER_PASSWORD:-airflow}'
+    MINIO_ENDPOINT: 'http://minio:9000'
+    MINIO_ACCESS_KEY: '${MINIO_ROOT_USER:-minioadmin}'
+    MINIO_SECRET_KEY: '${MINIO_ROOT_PASSWORD:-minioadmin}'
+    MINIO_BUCKET_NAME: '${MINIO_BUCKET_NAME:-gharchive}'
+    CLICKHOUSE_HOST: '${CLICKHOUSE_HOST:-clickhouse}'
+    CLICKHOUSE_PORT: '${CLICKHOUSE_PORT:-8123}'
+    CLICKHOUSE_NATIVE_PORT: '${CLICKHOUSE_NATIVE_PORT:-9000}'
+    CLICKHOUSE_USER: '${CLICKHOUSE_USER:-default}'
+    CLICKHOUSE_PASSWORD: '${CLICKHOUSE_PASSWORD:-clickhouse}'
+    CLICKHOUSE_DB: '${CLICKHOUSE_DB:-bronze}'
+    DBT_PROFILES_DIR: '/opt/airflow/dbt_gharchive'
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/scripts:/opt/airflow/scripts
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./airflow/data:/opt/airflow/data
+    - ./dbt_gharchive:/opt/airflow/dbt_gharchive
+  depends_on:
+    airflow-db:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+    clickhouse:
+      condition: service_healthy
+
+services:
+  airflow-db:
+    image: postgres:15-alpine
+    container_name: gharchive-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}
+      POSTGRES_DB: ${POSTGRES_DB:-airflow}
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airflow}"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: pgsty/silo:latest
+    container_name: gharchive-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API Port
+      - "9001:9001"   # MinIO Web Console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio-init:
+    image: amazon/aws-cli:latest
+    container_name: gharchive-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      aws --endpoint-url=http://minio:9000 s3 mb s3://${MINIO_BUCKET_NAME:-gharchive} || true;
+      exit 0;
+      "
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: gharchive-clickhouse
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-bronze}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"   # HTTP Interface & Web SQL UI (http://localhost:8123/play)
+      - "9002:9000"   # Native TCP Port (đổi sang 9002 trên host để tránh trùng cổng 9000 của MinIO)
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8123/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: gharchive-airflow-init
+    entrypoint: >
+      /bin/bash -c "
+      mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/scripts /opt/airflow/plugins /opt/airflow/data &&
+      airflow db migrate &&
+      airflow users create --username airflow --password airflow --firstname Air --lastname Flow --role Admin --email admin@example.com || true
+      "
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: gharchive-airflow-webserver
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: gharchive-airflow-scheduler
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    command: scheduler
+    restart: unless-stopped
+
+  superset:
+    build:
+      context: ./superset
+      dockerfile: Dockerfile
+    image: gharchive-superset:latest
+    container_name: gharchive-superset
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-gharchive_superset_secret_key_2026_lakehouse}
+      SUPERSET_LOAD_EXAMPLES: 'no'
+      SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-admin}
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-clickhouse}
+      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+    ports:
+      - "8088:8088"   # Giao diện Apache Superset BI (http://localhost:8088)
+    volumes:
+      - superset-home:/app/superset_home
+      - ./superset/bootstrap_clickhouse.py:/app/bootstrap_clickhouse.py
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8088/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-db-volume:
+  minio-data:
+  clickhouse-data:
+  superset-home:

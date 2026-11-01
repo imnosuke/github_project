@@ -1,0 +1,9 @@
+airflow/logs/
+airflow/data/
+**/__pycache__/
+*.pyc
+dbt_gharchive/target/
+dbt_gharchive/logs/
+dbt_gharchive/dbt_packages/
+.git/
+

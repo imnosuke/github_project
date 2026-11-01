@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: gold_repo_daily_activity
+    description: "Tầng Gold: Bảng tổng hợp các chỉ số hoạt động hàng ngày của từng Repository (stars, forks, commits, PRs, issues, số lượng người đóng góp)."
+    columns:
+      - name: event_date
+        tests:
+          - not_null
+      - name: repo_id
+        tests:
+          - not_null
+      - name: repo_full_name
+      - name: total_events
+      - name: stars_gained
+      - name: total_commits_pushed
+
+  - name: gold_actor_activity
+    description: "Tầng Gold: Bảng tổng hợp mức độ đóng góp hàng ngày của từng lập trình viên / tài khoản trên GitHub."
+    columns:
+      - name: event_date
+        tests:
+          - not_null
+      - name: actor_id
+        tests:
+          - not_null
+      - name: actor_login
+      - name: total_events
+
+  - name: gold_hourly_event_stats
+    description: "Tầng Gold: Thống kê lưu lượng sự kiện theo từng khung giờ và từng loại sự kiện (tách biệt người dùng thật và bot)."
+    columns:
+      - name: event_date
+        tests:
+          - not_null
+      - name: event_hour
+        tests:
+          - not_null
+      - name: event_type
+        tests:
+          - not_null
+
