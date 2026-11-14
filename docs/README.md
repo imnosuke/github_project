@@ -21,6 +21,8 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 
 - [APP-04 — Khung Streamlit](app-ml/APP-04-streamlit-shell.md).
 
+- [APP-05 — Repository Explorer](app-ml/APP-05-repository-explorer.md).
+
 ## Cơ sở đánh giá
 
 - Mã nguồn và cấu hình trong repo; không chỉ dựa vào mô tả README.

@@ -49,4 +49,4 @@ Contract: [APP-02](../../docs/app-ml/APP-02-data-contract-v1.md).
 streamlit run apps/streamlit/app.py
 ```
 
-Có ba trang điều hướng, bộ lọc ngày dùng chung, nhãn DEMO và trạng thái completeness/freshness. Overview/Growth còn placeholder; Explorer mới có danh sách preview. `APP_DATA_SOURCE=fixture` là mặc định; `APP_FIXTURE_DIR` tùy chọn chỉ tới bộ fixture khác. Nút tải lại làm mới cache.
+Có ba trang điều hướng, bộ lọc ngày dùng chung, nhãn DEMO và trạng thái completeness/freshness. Overview/Growth còn placeholder; Explorer có filters, pagination, detail và comparison (APP-05). `APP_DATA_SOURCE=fixture` là mặc định; `APP_FIXTURE_DIR` tùy chọn chỉ tới bộ fixture khác. Nút tải lại làm mới cache.

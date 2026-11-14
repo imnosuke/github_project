@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from apps.streamlit.data import get_adapter
+from apps.streamlit.explorer import render_explorer
 
 st.set_page_config(page_title="RepoScope · GitHub Analytics", page_icon="📊", layout="wide")
 
@@ -95,14 +96,7 @@ def main():
         st.info("Khung Overview đã sẵn sàng. KPI và biểu đồ phân tích sẽ triển khai ở APP-06.")
         st.write("Các phần dự kiến: tracked repos, repos có activity, total events và star/fork trends.")
     elif page == "Repository Explorer":
-        query = st.text_input("Tìm repository", placeholder="Ví dụ: rising")
-        repos = adapter.list_repositories(query=query)
-        if repos.empty:
-            st.info("Không tìm thấy repository phù hợp. Thử từ khóa khác.")
-        else:
-            st.dataframe(repos[["repository_id", "repository_name", "category", "ecosystem"]],
-                         hide_index=True, width="stretch")
-            st.caption("Đây là danh sách preview để kiểm tra navigation/data adapter. Detail, filters và comparison thuộc APP-05.")
+        render_explorer(adapter, start, end)
     else:
         st.info("Khung Growth Analytics đã sẵn sàng. Ranking và so sánh 7/30 ngày sẽ triển khai ở APP-06.")
         st.caption("Growth cần hai cửa sổ complete liên tiếp; không thay missing bằng zero.")

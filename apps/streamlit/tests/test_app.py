@@ -30,3 +30,24 @@ def test_load_failure(monkeypatch, tmp_path):
     app = AppTest.from_file(str(APP)).run()
     assert not app.exception
     assert any("Không thể tải" in item.value for item in app.error)
+
+
+def test_explorer_metadata_and_comparison():
+    app = AppTest.from_file(str(APP)).run()
+    app.sidebar.radio[0].set_value("Repository Explorer").run()
+    app.selectbox(key="detail_repo").set_value(1006).run()
+    assert not app.exception
+    assert any("chưa có metadata snapshot" in item.value for item in app.info)
+    assert app.selectbox(key="compare_repo").value != 1006
+    app.selectbox(key="detail_repo").set_value(1005).run()
+    assert not app.exception
+    assert any("Không tổng hợp toàn kỳ" in item.value for item in app.warning)
+
+
+def test_explorer_filter_and_pagination():
+    app = AppTest.from_file(str(APP)).run()
+    app.sidebar.radio[0].set_value("Repository Explorer").run()
+    app.selectbox(key="filter_primary_language").set_value("Chưa có metadata").run()
+    assert not app.exception
+    assert app.selectbox(key="detail_repo").value == 1006
+    assert any("Cần ít nhất hai" in item.value for item in app.info)

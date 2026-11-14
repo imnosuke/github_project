@@ -94,10 +94,12 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### APP-05 — Repository Explorer và trang chi tiết
 
-- [ ] Danh sách repo: tìm theo tên, sort, phân trang; lọc language/category khi metadata có sẵn.
-- [ ] Trang chi tiết: metadata, daily activity, star/fork events, PR/issue metrics.
-- [ ] Xử lý repo không tồn tại, thiếu metadata và thiếu lịch sử.
-- [ ] Cho phép so sánh hai repo trên cùng thời gian và cùng định nghĩa metric.
+**Trạng thái:** hoàn tất fixture local; [kết quả APP-05](APP-05-repository-explorer.md).
+
+- [x] Danh sách repo: tìm theo tên, sort, phân trang; lọc language/category khi metadata có sẵn.
+- [x] Trang chi tiết: metadata, daily activity, star/fork events, PR/issue metrics.
+- [x] Xử lý repo không tồn tại, thiếu metadata và thiếu lịch sử.
+- [x] Cho phép so sánh hai repo trên cùng thời gian và cùng định nghĩa metric.
 
 **Đầu ra:** luồng tìm → xem → so sánh repository.
 
