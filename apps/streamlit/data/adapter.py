@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, TypedDict
 
 import pandas as pd
 
@@ -16,7 +17,33 @@ KEYS = {"repository_registry": ["repository_id", "tracking_start_date"],
         "repository_daily_metrics": ["repository_id", "date"], "daily_data_status": ["date"]}
 
 
+class Publication(TypedDict):
+    contract_version: str
+    data_source: str
+    publication_id: str
+    published_at: str
+    expected_complete_through: str | None
+
+
+class OverviewData(TypedDict):
+    tracked_repositories: int
+    totals: dict[str, int] | None
+    trend: pd.DataFrame
+
+
 class DataAdapter(Protocol):
+    """One validated, consistent publication per adapter instance.
+
+    Dates are inclusive UTC ISO dates. Returned frames/dicts are owned by callers;
+    consumers may alter them without changing the publication. Catalog metadata
+    is the latest observation, not an as-of historical classification.
+    """
+    def publication(self) -> Publication: ...
+    def date_bounds(self) -> tuple[str, str] | None: ...
+    def latest_complete_date(self) -> str | None: ...
+    def day_status(self, start: str, end: str) -> pd.DataFrame: ...
+    def repository_catalog(self) -> pd.DataFrame: ...
+    def overview(self, start: str, end: str) -> OverviewData: ...
     def list_repositories(self, query: str = "", offset: int = 0, limit: int = 20) -> pd.DataFrame: ...
     def repository_detail(self, repository_id: int) -> dict: ...
     def time_series(self, repository_id: int, start: str, end: str) -> pd.DataFrame: ...
@@ -93,6 +120,64 @@ class FixtureAdapter:
         if set(self.tables["repository_metadata"].repository_id) - set(registry.repository_id):
             raise ValueError("Unknown metadata repository")
 
+    def publication(self) -> Publication:
+        return Publication(
+            contract_version=self.envelope["contract_version"],
+            data_source=self.envelope["data_source"],
+            publication_id=self.envelope["publication_id"],
+            published_at=self.envelope["published_at"],
+            expected_complete_through=self.envelope.get("expected_complete_through"),
+        )
+
+    def date_bounds(self) -> tuple[str, str] | None:
+        dates = self.tables["daily_data_status"].date
+        return None if dates.empty else (dates.min(), dates.max())
+
+    def latest_complete_date(self) -> str | None:
+        statuses = self.tables["daily_data_status"]
+        dates = statuses.loc[statuses.status == "complete", "date"]
+        return None if dates.empty else dates.max()
+
+    def day_status(self, start: str, end: str) -> pd.DataFrame:
+        self._validate_range(start, end)
+        rows = self.tables["daily_data_status"]
+        return rows[rows.date.between(start, end)].sort_values("date").copy()
+
+    @staticmethod
+    def _validate_range(start: str, end: str) -> None:
+        from datetime import date
+        if date.fromisoformat(start) > date.fromisoformat(end):
+            raise ValueError("Start must precede end")
+
+    def repository_catalog(self) -> pd.DataFrame:
+        registry = self.tables["repository_registry"].sort_values("tracking_start_date").drop_duplicates("repository_id", keep="last").copy()
+        metadata = self.tables["repository_metadata"].sort_values("observed_at").drop_duplicates("repository_id", keep="last")
+        return registry.merge(metadata[["repository_id", "primary_language"]], on="repository_id", how="left", validate="one_to_one")
+
+    def overview(self, start: str, end: str) -> OverviewData:
+        self._validate_range(start, end)
+        registry = self.tables["repository_registry"]
+        scoped = registry[(registry.tracking_start_date <= end)
+                          & (registry.tracking_end_date.fillna("9999-12-31") >= start)]
+        rows = self.tables["repository_daily_metrics"]
+        rows = rows[rows.date.between(start, end)]
+        statuses = self.tables["daily_data_status"]
+        statuses = statuses[statuses.date.between(start, end)]
+        expected = set(pd.date_range(start, end).strftime("%Y-%m-%d"))
+        valid = set(statuses.date) == expected and (statuses.status == "complete").all()
+        totals = None
+        fields = ["total_events", "star_events", "fork_events"]
+        if valid and not rows[fields].isna().any().any():
+            totals = {field: int(rows[field].sum()) for field in fields}
+            totals["active_repositories"] = int(rows.loc[rows.total_events > 0, "repository_id"].nunique())
+        trend = rows.groupby("date")[fields].sum(min_count=1).reindex(sorted(expected))
+        complete_dates = set(statuses.loc[statuses.status == "complete", "date"])
+        trend.loc[~trend.index.isin(complete_dates), fields] = float("nan")
+        # Complete days with no tracked activity are known zeros, not missing days.
+        trend.loc[trend.index.isin(complete_dates), fields] = trend.loc[trend.index.isin(complete_dates), fields].fillna(0)
+        return OverviewData(tracked_repositories=int(scoped.repository_id.nunique()), totals=totals,
+                                trend=trend.rename_axis("date").reset_index())
+
     def list_repositories(self, query="", offset=0, limit=20):
         if offset < 0 or not 1 <= limit <= 1000:
             raise ValueError("Invalid pagination")
@@ -107,8 +192,8 @@ class FixtureAdapter:
             raise KeyError(repository_id)
         metadata = self.tables["repository_metadata"]
         snapshots = metadata[metadata.repository_id == repository_id].sort_values("observed_at")
-        return {"registry": rows.iloc[-1].to_dict(),
-                "metadata": None if snapshots.empty else snapshots.iloc[-1].to_dict()}
+        return deepcopy({"registry": rows.iloc[-1].to_dict(),
+                         "metadata": None if snapshots.empty else snapshots.iloc[-1].to_dict()})
 
     def time_series(self, repository_id, start, end):
         self.repository_detail(repository_id)
@@ -152,6 +237,10 @@ class FixtureAdapter:
 
 
 def get_adapter(source="fixture", directory=None) -> DataAdapter:
+    if source == "clickhouse":
+        from .config import ClickHouseConfig
+        ClickHouseConfig.from_env()
+        raise NotImplementedError("ClickHouse configuration is valid, but live adapter is not implemented; APP-07 awaits DE contract confirmation")
     if source != "fixture":
-        raise ValueError("Only fixture is implemented; live adapter is APP-07")
+        raise ValueError("APP_DATA_SOURCE must be fixture or clickhouse")
     return FixtureAdapter(directory or Path(__file__).parent / "fixtures")

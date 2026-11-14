@@ -19,7 +19,8 @@ st.set_page_config(page_title="RepoScope · GitHub Analytics", page_icon="📊",
 
 
 @st.cache_resource
-def load_adapter(source, directory):
+def load_adapter(source, directory, interface_version):
+    # Include the consumer interface in the cache key across hot reloads.
     return get_adapter(source=source, directory=directory)
 
 
@@ -30,7 +31,8 @@ def main():
     directory = os.getenv("APP_FIXTURE_DIR") or str(Path(__file__).parent / "data" / "fixtures")
     try:
         with st.spinner("Đang kiểm tra và tải dữ liệu…"):
-            adapter = load_adapter(source, directory)
+            adapter = load_adapter(source, directory, interface_version="app-07-v1")
+            envelope = adapter.publication()
     except Exception as exc:
         st.error("Không thể tải nguồn dữ liệu. Kiểm tra cấu hình hoặc tạo lại fixture.")
         with st.expander("Chi tiết lỗi"):
@@ -40,8 +42,8 @@ def main():
             st.rerun()
         return
 
-    envelope = adapter.envelope
-    st.warning("DEMO — Dữ liệu tổng hợp, không phải hoạt động GitHub thực tế hoặc kết quả ML.")
+    if envelope["data_source"] == "fixture":
+        st.warning("DEMO — Dữ liệu tổng hợp, không phải hoạt động GitHub thực tế hoặc kết quả ML.")
     with st.sidebar:
         st.header("Điều hướng")
         page = st.radio("Trang", ["Overview", "Repository Explorer", "Growth Analytics"], key="page")
@@ -53,14 +55,12 @@ def main():
             load_adapter.clear()
             st.rerun()
 
-    statuses = adapter.tables["daily_data_status"].copy()
-    if statuses.empty:
+    bounds = adapter.date_bounds()
+    if bounds is None:
         st.info("Nguồn chưa có ngày dữ liệu nào. Hãy kiểm tra fixture hoặc chờ lần công bố tiếp theo.")
         return
-    lower = date.fromisoformat(statuses.date.min())
-    upper = date.fromisoformat(statuses.date.max())
-    complete = statuses.loc[statuses.status == "complete", "date"]
-    latest = None if complete.empty else complete.max()
+    lower, upper = (date.fromisoformat(value) for value in bounds)
+    latest = adapter.latest_complete_date()
     expected = envelope.get("expected_complete_through")
     if latest is None:
         st.error("Chưa có ngày nào complete.")
@@ -85,7 +85,7 @@ def main():
     st.subheader(page)
     st.caption(f"Bộ lọc dùng chung: {start} → {end}, gồm cả hai đầu ngày UTC.")
     dates = pd.date_range(start, end).strftime("%Y-%m-%d")
-    selected_status = statuses[statuses.date.between(start, end)]
+    selected_status = adapter.day_status(start, end)
     unknown = len(set(dates) - set(selected_status.date))
     incomplete = int((selected_status.status != "complete").sum()) + unknown
     if incomplete:

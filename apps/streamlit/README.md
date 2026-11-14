@@ -26,7 +26,7 @@ series = adapter.time_series(1001, "2026-10-01", "2026-11-01")
 ranking = adapter.growth_ranking("2026-11-01", window=30)
 ```
 
-Có thể truyền `directory=...` để đọc bộ fixture khác. `source="live"` hiện báo lỗi rõ; implement trong APP-07. UI phải đọc `adapter.envelope` và gắn nhãn fixture.
+Có thể truyền `directory=...` để đọc bộ fixture khác. `source="clickhouse"` kiểm tra cấu hình và báo `NotImplementedError` cho tới khi live adapter hoàn thiện. UI đọc `adapter.publication()` để gắn nhãn nguồn dữ liệu.
 
 ## Fixture
 
@@ -52,3 +52,12 @@ streamlit run apps/streamlit/app.py
 Có ba trang điều hướng, bộ lọc ngày dùng chung, nhãn DEMO và trạng thái completeness/freshness. Overview có KPI/trend; Growth có ranking 7/30 ngày và danh sách loại do thiếu dữ liệu; Explorer có filters, pagination, detail và comparison (APP-05). `APP_DATA_SOURCE=fixture` là mặc định; `APP_FIXTURE_DIR` tùy chọn chỉ tới bộ fixture khác. Nút tải lại làm mới cache.
 
 APP-06: Growth dùng end date làm anchor, tự đọc đủ hai cửa sổ liên tiếp; start date chung chỉ áp dụng Overview/Explorer. Không công bố tổng KPI cho kỳ incomplete, không xếp hạng các repo thiếu lịch sử.
+
+## Chuẩn bị APP-07
+
+UI dùng `DataAdapter` thay vì bảng nội bộ của fixture. Xem
+[interface và cấu hình ClickHouse](../../docs/app-ml/APP-07-adapter-preparation.md)
+và `.env.example` trong thư mục này. Export biến môi trường trước khi chạy;
+file mẫu không tự được load. `APP_DATA_SOURCE=clickhouse` hiện báo lỗi rõ ràng
+sau khi validate cấu hình: chưa có live adapter, không fallback sang demo.
+Không commit mật khẩu; live cần DE xác nhận contract và cấp tài khoản chỉ đọc.

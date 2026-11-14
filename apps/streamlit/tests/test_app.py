@@ -32,6 +32,17 @@ def test_load_failure(monkeypatch, tmp_path):
     assert any("Không thể tải" in item.value for item in app.error)
 
 
+def test_incompatible_adapter_shows_retry(monkeypatch):
+    import apps.streamlit.data as data
+
+    monkeypatch.setenv("APP_FIXTURE_DIR", "incompatible-adapter-test")
+    monkeypatch.setattr(data, "get_adapter", lambda **kwargs: object())
+    app = AppTest.from_file(str(APP)).run()
+    assert not app.exception
+    assert any("Không thể tải" in item.value for item in app.error)
+    assert any(button.label == "Thử lại" for button in app.button)
+
+
 def test_explorer_metadata_and_comparison():
     app = AppTest.from_file(str(APP)).run()
     app.sidebar.radio[0].set_value("Repository Explorer").run()

@@ -49,10 +49,10 @@ APP-04–06 có UI review thực tế được báo cáo trên fixture; automate
 
 ## 5. Bước tiếp theo — chuẩn bị APP-07
 
-- [ ] Bổ sung adapter interface cho catalog/latest metadata, day status, date bounds, publication và overview aggregates.
-- [ ] Loại `adapter.tables` khỏi UI và logic presentation; giữ fixture implementation sau interface.
-- [ ] Giữ các hành vi/filter/metric hiện có và tests khi refactor.
+- [x] Bổ sung adapter interface cho catalog/latest metadata, day status, date bounds, publication và overview aggregates.
+- [x] Loại `adapter.tables` khỏi UI và logic presentation; giữ fixture implementation sau interface.
+- [x] Giữ các hành vi/filter/metric hiện có và tests khi refactor.
 - [ ] Chuẩn bị cấu hình server-side ClickHouse, connection read-only và mapping Gold.
 - [ ] Khi DE bàn giao registry/status/publication cùng contract đã xác nhận: tích hợp và đối soát dữ liệu thật.
 
-Các task này mới là kế hoạch, chưa được thực hiện trong lượt ghi tài liệu. Nếu pipeline chưa sẵn sàng, có thể tiếp tục ML-01/02 sau phần chuẩn hóa interface.
+Interface và cấu hình server-side đã được chuẩn bị trong [APP-07 preparation](APP-07-adapter-preparation.md); connection read-only và mapping Gold chưa triển khai. Nếu pipeline chưa sẵn sàng, có thể tiếp tục ML-01/02 sau phần chuẩn hóa interface.

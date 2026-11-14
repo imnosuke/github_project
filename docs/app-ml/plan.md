@@ -2,7 +2,7 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03 đã có fixture và data adapter local; APP-04 đã có UI shell local; chưa có live adapter. APP-05/06 hoàn tất local; review UI do Gemini báo cáo và Codex chạy lại 14 tests pass. Target ML chưa chốt.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03 đã có fixture và data adapter local; APP-04 đã có UI shell local; chưa có live adapter. APP-05/06 hoàn tất local; review UI do Gemini báo cáo và Codex chạy lại 14 tests pass. Đã chuẩn bị interface adapter và cấu hình ClickHouse cho APP-07; chưa có live adapter/đối soát Gold. Target ML chưa chốt.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).
@@ -129,6 +129,8 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 ### Giai đoạn C — Tích hợp pipeline thật
 
 #### APP-07 — Adapter ClickHouse/API và kiểm tra contract
+
+**Chuẩn bị local:** đã tách truy cập bảng thô khỏi UI, bổ sung interface và cấu hình ClickHouse; [chi tiết](APP-07-adapter-preparation.md). Các checklist tích hợp thật bên dưới vẫn chưa hoàn tất.
 
 - [ ] Thêm adapter nguồn thật theo stack đã chọn; credentials chỉ ở phía server/cấu hình môi trường phù hợp.
 - [ ] Đọc Gold/view đúng contract, query có giới hạn ngày, sort và pagination.

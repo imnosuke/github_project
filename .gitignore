@@ -14,8 +14,10 @@ dbt_gharchive/dbt_packages/
 .venv/
 venv/
 
-# Environment variables (bỏ dấu # ở dòng dưới nếu không muốn đẩy file .env lên GitHub)
-# .env
+# Local environment secrets; keep distributable examples tracked
+.env
+.env.*
+!.env.example
 
 # OS & IDE files
 .DS_Store

@@ -3,31 +3,15 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
-def overview_data(adapter, start, end):
-    registry = adapter.tables["repository_registry"]
-    scoped = registry[(registry.tracking_start_date <= end)
-                      & (registry.tracking_end_date.fillna("9999-12-31") >= start)]
-    rows = adapter.tables["repository_daily_metrics"]
-    rows = rows[rows.date.between(start, end)]
-    statuses = adapter.tables["daily_data_status"]
-    statuses = statuses[statuses.date.between(start, end)]
-    expected = set(pd.date_range(start, end).strftime("%Y-%m-%d"))
-    valid = set(statuses.date) == expected and (statuses.status == "complete").all()
-    totals = None
-    fields = ["total_events", "star_events", "fork_events"]
-    if valid and not rows[fields].isna().any().any():
-        totals = {field: int(rows[field].sum()) for field in fields}
-        totals["active_repositories"] = int(rows.loc[rows.total_events > 0, "repository_id"].nunique())
-    trend = rows.groupby("date")[fields].sum(min_count=1).reindex(sorted(expected))
-    complete_dates = set(statuses.loc[statuses.status == "complete", "date"])
-    trend.loc[~trend.index.isin(complete_dates), fields] = float("nan")
-    # Complete days with no tracked activity are known zeros, not missing days.
-    trend.loc[trend.index.isin(complete_dates), fields] = trend.loc[trend.index.isin(complete_dates), fields].fillna(0)
-    return int(scoped.repository_id.nunique()), totals, trend.rename_axis("date").reset_index()
+from apps.streamlit.data import DataAdapter
 
 
-def render_overview(adapter, start, end):
+def overview_data(adapter: DataAdapter, start, end):
+    result = adapter.overview(start, end)
+    return result["tracked_repositories"], result["totals"], result["trend"]
+
+
+def render_overview(adapter: DataAdapter, start, end):
     tracked, totals, trend = overview_data(adapter, start, end)
     cols = st.columns(5)
     cols[0].metric("Repositories theo dõi", f"{tracked:,}")
@@ -58,7 +42,7 @@ def render_overview(adapter, start, end):
         st.dataframe(trend, hide_index=True, width="stretch")
 
 
-def render_growth(adapter, start, end):
+def render_growth(adapter: DataAdapter, start, end):
     st.caption("Ngày kết thúc của bộ lọc chung là anchor T. Khoảng ngày bắt đầu không giới hạn lookback: hệ thống đọc thêm kỳ trước để so sánh đúng.")
     window = st.selectbox("Cửa sổ growth (ngày)", [7, 30], index=1)
     anchor = pd.Timestamp(end)

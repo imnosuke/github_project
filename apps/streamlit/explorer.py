@@ -3,18 +3,17 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from apps.streamlit.data import DataAdapter
+
 METRICS = ["total_events", "star_events", "fork_events", "push_events", "commits_pushed",
            "prs_opened", "prs_merged", "prs_closed_unmerged", "issues_opened", "issues_closed", "issue_comments"]
 
 
-def catalog(adapter):
-    # Fixture implementation; APP-07 will move catalog filtering to the live query.
-    registry = adapter.tables["repository_registry"].sort_values("tracking_start_date").drop_duplicates("repository_id", keep="last").copy()
-    metadata = adapter.tables["repository_metadata"].sort_values("observed_at").drop_duplicates("repository_id", keep="last")
-    return registry.merge(metadata[["repository_id", "primary_language"]], on="repository_id", how="left", validate="one_to_one")
+def catalog(adapter: DataAdapter):
+    return adapter.repository_catalog()
 
 
-def prepared_series(adapter, rid, start, end):
+def prepared_series(adapter: DataAdapter, rid, start, end):
     rows = adapter.time_series(rid, start, end)
     for metric in METRICS + ["unique_actors", "unique_human_actors"]:
         rows.loc[rows.status != "complete", metric] = pd.NA
@@ -28,7 +27,7 @@ def summary(rows, start, end):
     return {metric: None if rows[metric].isna().any() else int(rows[metric].sum()) for metric in METRICS}
 
 
-def render_explorer(adapter, start, end):
+def render_explorer(adapter: DataAdapter, start, end):
     query = st.text_input("Tìm repository", placeholder="Ví dụ: rising")
     repos = catalog(adapter)
     cols = st.columns(3)
