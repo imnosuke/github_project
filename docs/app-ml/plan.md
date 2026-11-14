@@ -2,7 +2,7 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03 đã có fixture và data adapter local; chưa có UI/live adapter. Target ML chưa chốt.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03 đã có fixture và data adapter local; APP-04 đã có UI shell local; chưa có live adapter. Target ML chưa chốt.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).
@@ -80,9 +80,11 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### APP-04 — Dựng khung giao diện và điều hướng
 
-- [ ] Tạo layout, navigation, bộ lọc ngày dùng chung và cấu hình data source.
-- [ ] Có loading, empty, error và stale/incomplete data states.
-- [ ] Hiển thị nguồn demo/thật và thời điểm dữ liệu cập nhật.
+**Trạng thái:** hoàn tất local; [kết quả APP-04](APP-04-streamlit-shell.md).
+
+- [x] Tạo layout, navigation, bộ lọc ngày dùng chung và cấu hình data source.
+- [x] Có loading, empty, error và stale/incomplete data states.
+- [x] Hiển thị nguồn demo/thật và thời điểm dữ liệu cập nhật.
 
 **Đầu ra:** ứng dụng local có điều hướng các trang bản đầu.
 

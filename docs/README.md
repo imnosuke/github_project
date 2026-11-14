@@ -19,6 +19,8 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 
 - [APP-03 — Fixture và data adapter](app-ml/APP-03-fixture-and-adapter.md).
 
+- [APP-04 — Khung Streamlit](app-ml/APP-04-streamlit-shell.md).
+
 ## Cơ sở đánh giá
 
 - Mã nguồn và cấu hình trong repo; không chỉ dựa vào mô tả README.

@@ -1,6 +1,6 @@
 # Application data layer — APP-03
 
-Đây là lớp dữ liệu local cho ứng dụng Streamlit tương lai. Chưa có entrypoint UI hoặc live ClickHouse adapter. Fixture là dữ liệu tổng hợp, không dùng đánh giá chất lượng ML.
+Đã có khung Streamlit local và lớp dữ liệu fixture. Chưa có live ClickHouse adapter. Fixture là dữ liệu tổng hợp, không dùng đánh giá chất lượng ML.
 
 Chạy từ thư mục gốc repository trong môi trường Python riêng, không cài vào môi trường Airflow:
 
@@ -42,3 +42,11 @@ Kết quả growth bao gồm các row không hợp lệ kèm `state`, current/de
 Validator kiểm tra keys, coverage, scope, counts và completeness quan trọng. Đây không phải validator JSON Schema tổng quát cho dữ liệu producer bất kỳ; live adapter cần kiểm tra schema/type và snapshot consistency bổ sung. Manifest là một publication cố định cho cả bộ fixture. Chưa có UI freshness indicator hoặc live publish protocol.
 
 Contract: [APP-02](../../docs/app-ml/APP-02-data-contract-v1.md).
+
+## Chạy giao diện APP-04
+
+```bash
+streamlit run apps/streamlit/app.py
+```
+
+Có ba trang điều hướng, bộ lọc ngày dùng chung, nhãn DEMO và trạng thái completeness/freshness. Overview/Growth còn placeholder; Explorer mới có danh sách preview. `APP_DATA_SOURCE=fixture` là mặc định; `APP_FIXTURE_DIR` tùy chọn chỉ tới bộ fixture khác. Nút tải lại làm mới cache.
