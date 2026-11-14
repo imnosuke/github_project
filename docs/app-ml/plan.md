@@ -2,12 +2,13 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03 đã có fixture và data adapter local; APP-04 đã có UI shell local; chưa có live adapter. APP-05/06 hoàn tất local; review UI do Gemini báo cáo và Codex chạy lại 14 tests pass. Đã chuẩn bị interface adapter và cấu hình ClickHouse cho APP-07; chưa có live adapter/đối soát Gold. Target ML chưa chốt.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03–06 hoàn tất fixture/local; phần chuẩn bị APP-07 đã merge, suite ứng dụng 44 tests pass; chưa có live adapter/đối soát Gold. **ML-01 hoàn tất thiết kế local**: regression star events 30 ngày, baseline, eligibility và time split có purge được kiểm chứng bằng code. Chưa nghiệm thu tính khả thi trên Gold hoặc train model.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).
 
 - [Review UI APP-04–06 và bước chuẩn bị APP-07](APP-06-ui-review.md).
+- [ML-01 — Bài toán, label và evaluation](ML-01-problem-and-evaluation.md).
 
 ## 1. Mục tiêu và phạm vi
 
@@ -187,12 +188,14 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### ML-01 — Chốt bài toán, label và evaluation
 
-- [ ] Xem xét bài toán khởi đầu: dự đoán số star events trong T+1…T+30 từ dữ liệu đến T.
-- [ ] Chốt regression hay ranking/classification, đối tượng repo và ngày dự đoán.
-- [ ] Định nghĩa label, metric đánh giá và baseline; quy tắc loại cửa sổ không complete.
-- [ ] Thiết kế train/validation/test theo thời gian, xử lý label windows chồng lấn ở ranh giới.
+**Trạng thái:** hoàn tất thiết kế local; [đặc tả và mã tham chiếu](ML-01-problem-and-evaluation.md). Khảo sát Gold và availability thực tế còn là gate trước ML-03.
 
-**Đầu ra:** đặc tả bài toán ML; đề xuất target chưa trở thành quyết định cho đến khi task này hoàn tất.
+- [x] Xem xét bài toán khởi đầu: dự đoán số star events trong T+1…T+30 từ dữ liệu đến T.
+- [x] Chốt regression hay ranking/classification, đối tượng repo và ngày dự đoán.
+- [x] Định nghĩa label, metric đánh giá và baseline; quy tắc loại cửa sổ không complete.
+- [x] Thiết kế train/validation/test theo thời gian, xử lý label windows chồng lấn ở ranh giới.
+
+**Đầu ra:** đặc tả `ml-stars-30d-v1`, `ml/spec.py` và tests window/label/purge. Target đã chốt cho ML-02; chưa có bằng chứng chất lượng model hoặc mô phỏng availability lịch sử.
 
 **Hoàn thành khi:** label/feature cutoff và split tính được bằng code, không dùng dữ liệu tương lai của tập đánh giá để train.
 

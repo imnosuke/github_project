@@ -26,6 +26,7 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 - [APP-06 — Overview và Growth Analytics](app-ml/APP-06-overview-and-growth.md).
 
 - [Review UI APP-04–06 và bước tiếp theo](app-ml/APP-06-ui-review.md).
+- [ML-01 — Bài toán star events 30 ngày, label và evaluation](app-ml/ML-01-problem-and-evaluation.md).
 
 ## Cơ sở đánh giá
 
