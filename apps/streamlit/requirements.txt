@@ -1,0 +1,4 @@
+# APP-03 data layer only. UI dependencies will be added in APP-04.
+pandas>=2.2,<3
+pyarrow>=15,<24
+pytest>=8,<10

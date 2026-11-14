@@ -1,0 +1,8 @@
+{
+  "contract_version": "1.0.0-draft",
+  "data_source": "fixture",
+  "publication_id": "fixture-001",
+  "published_at": "2026-11-04T03:00:00Z",
+  "expected_complete_through": "2026-11-02",
+  "description": "Synthetic deterministic demo, not ML evaluation data"
+}

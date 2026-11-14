@@ -17,6 +17,8 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 - [APP-01 — Quyết định Streamlit và phạm vi bản đầu](app-ml/APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](app-ml/APP-02-data-contract-v1.md).
 
+- [APP-03 — Fixture và data adapter](app-ml/APP-03-fixture-and-adapter.md).
+
 ## Cơ sở đánh giá
 
 - Mã nguồn và cấu hình trong repo; không chỉ dựa vào mô tả README.

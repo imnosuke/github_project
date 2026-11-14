@@ -2,7 +2,7 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. Chưa triển khai app/fixture. Target ML chưa chốt.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03 đã có fixture và data adapter local; chưa có UI/live adapter. Target ML chưa chốt.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).
@@ -62,11 +62,13 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### APP-03 — Tạo fixture và data adapter
 
-- [ ] Tạo dữ liệu tái lập cho nhiều repo, tối thiểu 90 ngày để thử hai cửa sổ 30 ngày và các trường hợp thiếu lịch sử.
-- [ ] Có repo tăng/giảm activity, ngày zero, ngày missing, metadata thiếu và dữ liệu chưa complete.
-- [ ] Tạo interface đọc list/detail/time series/ranking, kèm validation đầu vào.
-- [ ] Implement fixture adapter; thiết kế cấu hình chuyển nguồn dữ liệu.
-- [ ] Kiểm tra ý nghĩa metric và các edge cases bằng ví dụ có expected output.
+**Trạng thái:** hoàn tất local; xem [kết quả APP-03](APP-03-fixture-and-adapter.md).
+
+- [x] Tạo dữ liệu tái lập cho nhiều repo, tối thiểu 90 ngày để thử hai cửa sổ 30 ngày và các trường hợp thiếu lịch sử.
+- [x] Có repo tăng/giảm activity, ngày zero, ngày missing, metadata thiếu và dữ liệu chưa complete.
+- [x] Tạo interface đọc list/detail/time series/ranking, kèm validation đầu vào.
+- [x] Implement fixture adapter; thiết kế cấu hình chuyển nguồn dữ liệu.
+- [x] Kiểm tra ý nghĩa metric và các edge cases bằng ví dụ có expected output.
 
 **Đầu ra:** fixture, data adapter và hướng dẫn chạy demo.
 
