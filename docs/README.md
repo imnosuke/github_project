@@ -25,6 +25,8 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 
 - [APP-06 — Overview và Growth Analytics](app-ml/APP-06-overview-and-growth.md).
 
+- [Review UI APP-04–06 và bước tiếp theo](app-ml/APP-06-ui-review.md).
+
 ## Cơ sở đánh giá
 
 - Mã nguồn và cấu hình trong repo; không chỉ dựa vào mô tả README.

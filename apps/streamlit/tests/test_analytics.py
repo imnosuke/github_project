@@ -41,3 +41,15 @@ def test_growth_ui_exclusions_and_incomplete():
     app.sidebar.date_input[0].set_value((date(2026,11,1), date(2026,11,3))).run()
     assert not app.exception
     assert any("Chưa có repository đủ" in item.value for item in app.info)
+
+
+def test_growth_sorting_options():
+    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run()
+    app.sidebar.date_input[0].set_value((date(2026, 10, 4), date(2026, 11, 2))).run()
+    app.sidebar.radio[0].set_value("Growth Analytics").run()
+    assert not app.exception
+    app.selectbox[1].set_value("Absolute delta").run()
+    assert not app.exception
+    app.selectbox[1].set_value("Growth % (baseline > 0)").run()
+    assert not app.exception
+

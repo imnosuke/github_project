@@ -91,7 +91,20 @@ def main():
     if incomplete:
         st.warning(f"Khoảng đã chọn có {incomplete} ngày thiếu, chưa complete hoặc chưa rõ trạng thái. Không công bố KPI tổng/growth cho toàn kỳ.")
     with st.expander("Trạng thái dữ liệu trong kỳ", expanded=bool(incomplete)):
-        st.dataframe(selected_status, hide_index=True, width="stretch")
+        st.dataframe(
+            selected_status,
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "date": st.column_config.DateColumn("Ngày (UTC)"),
+                "status": st.column_config.TextColumn("Trạng thái"),
+                "expected_files": st.column_config.NumberColumn("File kỳ vọng", format="%d"),
+                "processed_files": st.column_config.NumberColumn("File đã xử lý", format="%d"),
+                "quality_passed": st.column_config.CheckboxColumn("Quality passed"),
+                "published_at": st.column_config.TextColumn("Công bố (UTC)"),
+                "reason": st.column_config.TextColumn("Ghi chú / Lý do"),
+            }
+        )
 
     if page == "Overview":
         render_overview(adapter, start, end)

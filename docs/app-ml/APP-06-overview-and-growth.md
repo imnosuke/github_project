@@ -32,3 +32,7 @@ AppTest chưa là visual browser QA. Fixture chủ yếu có star events, chưa 
 ## Tiếp theo
 
 APP-07 cần contract được DE xác nhận, registry/status/publication và kết nối Gold. Có thể tiếp tục ML-01/02 hoặc chuẩn bị adapter live độc lập; không giả định pipeline hiện đã đáp ứng contract.
+
+## Cập nhật sau review UI — 14/11/2026
+
+Xem [báo cáo review UI và chỉnh sửa](APP-06-ui-review.md): quan sát browser do Gemini báo cáo, các cải tiến hiển thị và kết quả Codex chạy lại 14 tests pass. Chưa nghiệm thu live pipeline.

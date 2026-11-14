@@ -27,3 +27,7 @@ Không cần chạy Docker/pipeline. Fixture đi kèm có thể regenerate theo 
 Streamlit AppTest kiểm tra navigation, bộ lọc ngày xuyên trang, cảnh báo incomplete, empty search và load failure; chạy chung với bốn test dữ liệu APP-03. AppTest kiểm tra thực thi/widgets, chưa là kiểm tra hình ảnh trên browser. Chưa công bố kết quả live hoặc benchmark.
 
 Freshness fixture là tương đối với `expected_complete_through` trong manifest, không thể hiện GitHub hiện tại. Live SLA, snapshot consistency và UI metadata thiếu chi tiết tiếp tục ở task tương ứng.
+
+## Cập nhật sau review UI — 14/11/2026
+
+Xem [báo cáo review UI và chỉnh sửa](APP-06-ui-review.md): quan sát browser do Gemini báo cáo, các cải tiến hiển thị và kết quả Codex chạy lại 14 tests pass. Chưa nghiệm thu live pipeline.

@@ -2,10 +2,12 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03 đã có fixture và data adapter local; APP-04 đã có UI shell local; chưa có live adapter. Target ML chưa chốt.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03 đã có fixture và data adapter local; APP-04 đã có UI shell local; chưa có live adapter. APP-05/06 hoàn tất local; review UI do Gemini báo cáo và Codex chạy lại 14 tests pass. Target ML chưa chốt.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).
+
+- [Review UI APP-04–06 và bước chuẩn bị APP-07](APP-06-ui-review.md).
 
 ## 1. Mục tiêu và phạm vi
 

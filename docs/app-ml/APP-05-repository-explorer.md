@@ -27,3 +27,7 @@ Chưa kiểm tra hình ảnh browser, chưa có query latency benchmark hoặc l
 ## Tiếp theo
 
 APP-06: Overview và Growth Analytics 7/30 ngày. Chưa triển khai các trang đó trong APP-05.
+
+## Cập nhật sau review UI — 14/11/2026
+
+Xem [báo cáo review UI và chỉnh sửa](APP-06-ui-review.md): quan sát browser do Gemini báo cáo, các cải tiến hiển thị và kết quả Codex chạy lại 14 tests pass. Chưa nghiệm thu live pipeline.
