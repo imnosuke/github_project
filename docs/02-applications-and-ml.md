@@ -40,11 +40,11 @@ Operations dashboard làm song song với pipeline: DE cung cấp dữ liệu v�
 
 Có thể dựng feature builder, time split, training/evaluation scripts, batch inference và schema prediction bằng fixture. Dữ liệu mẫu chỉ giúp kiểm tra luồng và code, không chứng minh chất lượng dự đoán.
 
-Bài toán đầu tiên được đề xuất, chưa chốt:
+Bài toán đầu tiên đã chốt cho triển khai local tại [ML-01](app-ml/ML-01-problem-and-evaluation.md); tính khả thi trên Gold thật còn chờ khảo sát:
 
 > Dùng dữ liệu đến ngày T để dự đoán số star events trong 30 ngày T+1 đến T+30.
 
-Đây là bài toán regression. Nếu chuyển sang dự đoán emerging/trending repository dạng classification hoặc ranking, phải chốt định nghĩa label và metric đánh giá riêng.
+Đây là bài toán regression, MAE là metric chính và persistence-30d là baseline chính. `ml/spec.py` kiểm chứng cutoff, label và split có purge 30 ngày; chưa có training pipeline/model. Nếu chuyển sang dự đoán emerging/trending repository dạng classification hoặc ranking, phải chốt định nghĩa label và metric đánh giá riêng.
 
 Nguyên tắc:
 
