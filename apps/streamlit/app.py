@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from apps.streamlit.data import get_adapter
 from apps.streamlit.explorer import render_explorer
+from apps.streamlit.analytics import render_overview, render_growth
 
 st.set_page_config(page_title="RepoScope · GitHub Analytics", page_icon="📊", layout="wide")
 
@@ -93,13 +94,11 @@ def main():
         st.dataframe(selected_status, hide_index=True, width="stretch")
 
     if page == "Overview":
-        st.info("Khung Overview đã sẵn sàng. KPI và biểu đồ phân tích sẽ triển khai ở APP-06.")
-        st.write("Các phần dự kiến: tracked repos, repos có activity, total events và star/fork trends.")
+        render_overview(adapter, start, end)
     elif page == "Repository Explorer":
         render_explorer(adapter, start, end)
     else:
-        st.info("Khung Growth Analytics đã sẵn sàng. Ranking và so sánh 7/30 ngày sẽ triển khai ở APP-06.")
-        st.caption("Growth cần hai cửa sổ complete liên tiếp; không thay missing bằng zero.")
+        render_growth(adapter, start, end)
 
 
 main()

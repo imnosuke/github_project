@@ -109,12 +109,14 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### APP-06 — Overview và Growth Analytics
 
-- [ ] Tổng quan repo được theo dõi, events, star events và activity trend.
-- [ ] Tính tổng 7/30 ngày và so với kỳ liền trước có cùng độ dài.
-- [ ] Growth ranking có công thức, quy tắc ties và baseline zero.
-- [ ] Thể hiện cửa sổ thiếu dữ liệu bằng trạng thái phù hợp; không mặc định là giảm trưởng.
-- [ ] Phân biệt tổng repo trong registry với repo có activity trong kỳ.
-- [ ] Nếu cần unique contributors cả kỳ, yêu cầu aggregate đúng grain từ DE hoặc tập actor IDs; không cộng daily uniques.
+**Trạng thái:** hoàn tất local trên fixture; [kết quả APP-06](APP-06-overview-and-growth.md).
+
+- [x] Tổng quan repo được theo dõi, events, star events và activity trend.
+- [x] Tính tổng 7/30 ngày và so với kỳ liền trước có cùng độ dài.
+- [x] Growth ranking có công thức, quy tắc ties và baseline zero.
+- [x] Thể hiện cửa sổ thiếu dữ liệu bằng trạng thái phù hợp; không mặc định là giảm trưởng.
+- [x] Phân biệt tổng repo trong registry với repo có activity trong kỳ.
+- [x] Nếu cần unique contributors cả kỳ, yêu cầu aggregate đúng grain từ DE hoặc tập actor IDs; không cộng daily uniques.
 
 **Đầu ra:** dashboard overview và trang growth có giải thích metric.
 

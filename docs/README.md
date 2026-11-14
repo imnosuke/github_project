@@ -23,6 +23,8 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 
 - [APP-05 — Repository Explorer](app-ml/APP-05-repository-explorer.md).
 
+- [APP-06 — Overview và Growth Analytics](app-ml/APP-06-overview-and-growth.md).
+
 ## Cơ sở đánh giá
 
 - Mã nguồn và cấu hình trong repo; không chỉ dựa vào mô tả README.
