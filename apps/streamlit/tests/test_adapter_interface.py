@@ -17,6 +17,7 @@ class InterfaceOnlyAdapter:
         self.latest_complete_date = fixture.latest_complete_date
         self.day_status = fixture.day_status
         self.repository_catalog = fixture.repository_catalog
+        self.registry_history = fixture.registry_history
         self.overview = fixture.overview
         self.list_repositories = fixture.list_repositories
         self.repository_detail = fixture.repository_detail

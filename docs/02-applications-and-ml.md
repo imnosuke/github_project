@@ -44,7 +44,7 @@ Bài toán đầu tiên đã chốt cho triển khai local tại [ML-01](app-ml/
 
 > Dùng dữ liệu đến ngày T để dự đoán số star events trong 30 ngày T+1 đến T+30.
 
-Đây là bài toán regression, MAE là metric chính và persistence-30d là baseline chính. `ml/spec.py` kiểm chứng cutoff, label và split có purge 30 ngày; chưa có training pipeline/model. Nếu chuyển sang dự đoán emerging/trending repository dạng classification hoặc ranking, phải chốt định nghĩa label và metric đánh giá riêng.
+Đây là bài toán regression, MAE là metric chính và persistence-30d là baseline chính. `ml/spec.py` kiểm chứng cutoff, label và split có purge 30 ngày. [ML-02](app-ml/ML-02-feature-and-training.md) đã có feature builder và train/evaluate skeleton trên fixture; chưa có model được đánh giá trên Gold thật. Nếu chuyển sang dự đoán emerging/trending repository dạng classification hoặc ranking, phải chốt định nghĩa label và metric đánh giá riêng.
 
 Nguyên tắc:
 

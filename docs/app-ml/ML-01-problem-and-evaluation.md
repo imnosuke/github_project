@@ -104,6 +104,6 @@ Review trước bàn giao: Gemini 3.8 Flash không tìm thấy lỗi chức năn
 
 ## 8. Bàn giao và phần chưa hoàn tất
 
-ML-01 hoàn tất thiết kế local và mã kiểm chứng. ML-02 tiếp theo: feature builder, dataset eligibility/audit, train/evaluate CLI và tests kiểm tra thay đổi dữ liệu sau T không đổi features tại T. Chưa có trained model, model artifact, predictions, evaluation report hoặc benchmark Gold.
+ML-01 hoàn tất thiết kế local và mã kiểm chứng. Phần triển khai tiếp theo đã có tại [ML-02](ML-02-feature-and-training.md): feature builder, dataset eligibility/audit, train/evaluate CLI và tests kiểm tra thay đổi dữ liệu sau T không đổi features tại T. Artifacts/model chỉ phục vụ smoke test trên fixture; chưa có training/evaluation hoặc benchmark Gold.
 
 Trước ML-03, DE cần xác nhận APP-02; bàn giao lịch sử registry/daily/status đủ dài, cơ chế publication/version nhất quán, lịch sử availability hoặc snapshot prospective và SLA. Khảo sát null/missing/zero/label distribution trên Gold rồi ghi biên bản khả thi và boundary cố định. Không coi các dependency này đã được DE chấp thuận qua tài liệu này.

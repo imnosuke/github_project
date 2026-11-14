@@ -2,13 +2,14 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03–06 hoàn tất fixture/local; phần chuẩn bị APP-07 đã merge, suite ứng dụng 44 tests pass; chưa có live adapter/đối soát Gold. **ML-01 hoàn tất thiết kế local**: regression star events 30 ngày, baseline, eligibility và time split có purge được kiểm chứng bằng code. Chưa nghiệm thu tính khả thi trên Gold hoặc train model.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03–06 hoàn tất fixture/local; phần chuẩn bị APP-07 đã merge, suite ứng dụng 44 tests pass; chưa có live adapter/đối soát Gold. **ML-01 hoàn tất thiết kế local**: regression star events 30 ngày, baseline, eligibility và time split có purge được kiểm chứng bằng code. **ML-02 hoàn tất local**: feature builder và train/evaluate CLI đã chạy trên fixture, chưa nghiệm thu khả thi hoặc model trên Gold thật.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).
 
 - [Review UI APP-04–06 và bước chuẩn bị APP-07](APP-06-ui-review.md).
 - [ML-01 — Bài toán, label và evaluation](ML-01-problem-and-evaluation.md).
+- [ML-02 — Feature builder và training skeleton](ML-02-feature-and-training.md).
 
 ## 1. Mục tiêu và phạm vi
 
@@ -203,11 +204,13 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### ML-02 — Feature pipeline và bộ khung training
 
-- [ ] Tạo rolling stars/forks/activity/contributor features theo contract có sẵn.
-- [ ] Join metadata theo thời điểm snapshot có thể biết tại T.
-- [ ] Có CLI/config cho feature generation, training và evaluation; output tái lập.
-- [ ] Viết kiểm tra cutoff, window boundaries, missing dates và leakage bằng sample nhỏ.
-- [ ] Chạy fixture để kiểm tra luồng; ghi rõ metrics demo không có ý nghĩa đánh giá model.
+**Trạng thái:** hoàn tất local; [cách chạy và giới hạn](ML-02-feature-and-training.md). Có fixture dài riêng cho full smoke test; fixture ứng dụng giữ nguyên và train bị chặn vì thiếu split. Chưa có evaluation trên Gold.
+
+- [x] Tạo rolling stars/forks/activity và daily actor features theo contract ML-01; không gọi daily actors là unique contributors cả kỳ.
+- [x] Tuân thủ quyết định metadata tại ML-01: v1 không dùng metadata, không join latest snapshot; as-of metadata là phần mở rộng sau này.
+- [x] Có CLI/config cho feature generation, training và evaluation; output tái lập trong cùng môi trường.
+- [x] Viết kiểm tra cutoff, window boundaries, missing dates và leakage bằng sample nhỏ.
+- [x] Chạy fixture để kiểm tra luồng; ghi rõ metrics demo không có ý nghĩa đánh giá model.
 
 **Đầu ra:** feature builder và skeleton train/evaluate chạy local.
 
