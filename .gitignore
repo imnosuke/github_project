@@ -28,4 +28,8 @@ Thumbs.db
 
 # Local application environment and test cache
 .venv-app/
+.venv-ml/
 .pytest_cache/
+
+# Generated ML smoke data, datasets and model artifacts
+ml/runs/

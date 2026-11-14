@@ -1,0 +1,9 @@
+{
+  "anchor_start": "2025-01-01",
+  "anchor_end": "2025-11-16",
+  "train_start": "2025-01-30",
+  "validation_start": "2025-07-01",
+  "test_start": "2025-09-01",
+  "test_end": "2025-09-30",
+  "ridge_alpha": 1.0
+}
