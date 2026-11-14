@@ -28,6 +28,7 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 - [Review UI APP-04–06 và bước tiếp theo](app-ml/APP-06-ui-review.md).
 - [ML-01 — Bài toán star events 30 ngày, label và evaluation](app-ml/ML-01-problem-and-evaluation.md).
 - [ML-02 — Feature builder và training skeleton](app-ml/ML-02-feature-and-training.md).
+- [ML-03 — Audit readiness, chuẩn bị trước dữ liệu thật](app-ml/ML-03-readiness-audit.md).
 
 ## Cơ sở đánh giá
 

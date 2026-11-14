@@ -1,4 +1,4 @@
-"""Build, train and evaluate local ML-02 artifacts (fixture smoke tests only)."""
+"""Local ML feature/training commands and ML-03 readiness diagnostics."""
 from datetime import date
 import argparse
 import hashlib
@@ -16,6 +16,7 @@ from ml.data import Inputs, iso_day
 from ml.features import FEATURES, build_dataset
 from ml.spec import SPEC_VERSION, TemporalSplit
 from ml.training import evaluate, matrix, train_and_evaluate
+from ml.readiness import input_error_report, markdown_report, readiness_report
 
 ARTIFACT_VERSION = 1
 WARNING = "SYNTHETIC FIXTURE — smoke test only; metrics do not measure real model quality. Retrospective event-time, not historical availability."
@@ -145,6 +146,32 @@ def evaluate_saved(args):
     print(json.dumps({"output": str(output), "mae": metrics["mae"], "warning": WARNING}))
 
 
+def audit_readiness(args):
+    config, days, split = read_config(args.config)
+    if args.source != "fixture" and args.fixture_dir is not None:
+        raise ValueError("--fixture-dir is only valid for --source fixture")
+    frames = {}
+    try:
+        data = Inputs.from_adapter(get_adapter(source=args.source, directory=args.fixture_dir))
+    except (NotImplementedError, OSError) as exc:
+        report = input_error_report(config, "source_unavailable", str(exc))
+    except (ValueError, KeyError, TypeError) as exc:
+        report = input_error_report(config, "input_validation_failed", str(exc))
+    else:
+        report, frames = readiness_report(data, config, days, split)
+    report["requested_source"] = args.source
+    output = new_output(args.output)
+    for name, frame in frames.items():
+        frame.to_parquet(output / f"{name}.parquet", index=False)
+    report["diagnostic_files"] = {f"{name}.parquet": digest(output / f"{name}.parquet") for name in frames}
+    dump(output / "readiness.json", report)
+    (output / "readiness.md").write_text(markdown_report(report))
+    print(json.dumps({"status": report["status"], "data_status": report["data_status"],
+                      "output": str(output), "blockers": report["blockers"]}))
+    # An audit never certifies approvals/availability it has not verified.
+    return 0 if report["ready_for_ml03"] else 2
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -152,13 +179,17 @@ def main(argv=None):
     builder.add_argument("--config", required=True)
     builder.add_argument("--fixture-dir")
     builder.add_argument("--features-only", action="store_true")
+    readiness = commands.add_parser("audit", help="Audit data readiness; never train or certify DE approval")
+    readiness.add_argument("--config", required=True)
+    readiness.add_argument("--source", choices=["fixture", "clickhouse"], default="fixture")
+    readiness.add_argument("--fixture-dir")
     trainer = commands.add_parser("train")
     trainer.add_argument("--config", required=True)
     trainer.add_argument("--dataset", required=True)
     evaluator = commands.add_parser("evaluate")
     evaluator.add_argument("--dataset", required=True)
     evaluator.add_argument("--run", required=True)
-    for command in (builder, trainer, evaluator):
+    for command in (builder, trainer, evaluator, readiness):
         command.add_argument("--output", required=True)
     args = parser.parse_args(argv)
     try:
@@ -166,9 +197,11 @@ def main(argv=None):
             return build(args) or 0
         if args.command == "train":
             return train(args)
+        if args.command == "audit":
+            return audit_readiness(args)
         return evaluate_saved(args) or 0
     except (ValueError, OSError, KeyError, TypeError) as exc:
-        parser.exit(2, f"ML-02 error: {exc}\n")
+        parser.exit(2, f"ML CLI error: {exc}\n")
 
 
 if __name__ == "__main__":

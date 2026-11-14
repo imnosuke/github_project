@@ -10,6 +10,7 @@ Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thi�
 - [Review UI APP-04–06 và bước chuẩn bị APP-07](APP-06-ui-review.md).
 - [ML-01 — Bài toán, label và evaluation](ML-01-problem-and-evaluation.md).
 - [ML-02 — Feature builder và training skeleton](ML-02-feature-and-training.md).
+- [ML-03 — Audit readiness (chuẩn bị local)](ML-03-readiness-audit.md).
 
 ## 1. Mục tiêu và phạm vi
 
@@ -219,6 +220,8 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 **Dependency:** ML-01, APP-03; không cần đợi toàn pipeline để dựng khung.
 
 #### ML-03 — Huấn luyện và đánh giá trên lịch sử thật
+
+**Chuẩn bị local:** đã có [audit readiness](ML-03-readiness-audit.md) cho coverage, eligibility và split shortfalls. Contract APP-02 vẫn chờ DE xác nhận; chưa có Gold audit hoặc training/evaluation thật. Các checklist nghiệm thu dưới đây giữ nguyên chưa hoàn tất.
 
 - [ ] Kiểm tra đủ lookback, label horizon và các giai đoạn evaluation.
 - [ ] Train baseline, sau đó thử một model phù hợp; chỉ tune trên train/validation.
