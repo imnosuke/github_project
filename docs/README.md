@@ -11,6 +11,10 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 | [03-parallel-development.md](03-parallel-development.md) | Chia trách nhiệm, hợp đồng dữ liệu đề xuất và cách làm cuốn chiếu |
 | [04-priority-backlog.md](04-priority-backlog.md) | Backlog ưu tiên, tiêu chí nghiệm thu và các mốc tích hợp |
 
+## Kế hoạch theo phần việc
+
+- [Ứng dụng và ML — plan theo task](app-ml/plan.md).
+
 ## Cơ sở đánh giá
 
 - Mã nguồn và cấu hình trong repo; không chỉ dựa vào mô tả README.
