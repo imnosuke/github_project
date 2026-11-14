@@ -14,6 +14,8 @@ Các tài liệu ghi lại findings từ việc đọc repo và đối chiếu k
 ## Kế hoạch theo phần việc
 
 - [Ứng dụng và ML — plan theo task](app-ml/plan.md).
+- [APP-01 — Quyết định Streamlit và phạm vi bản đầu](app-ml/APP-01-scope-and-stack.md).
+- [APP-02 — Data contract v1 draft](app-ml/APP-02-data-contract-v1.md).
 
 ## Cơ sở đánh giá
 

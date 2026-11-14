@@ -2,7 +2,10 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái ban đầu: **đang lập kế hoạch**, chưa triển khai các task bên dưới. Các lựa chọn stack, schema và target ML cần được chốt trong task tương ứng.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. Chưa triển khai app/fixture. Target ML chưa chốt.
+
+- [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
+- [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).
 
 ## 1. Mục tiêu và phạm vi
 
@@ -29,10 +32,10 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### APP-01 — Chốt phạm vi và stack ứng dụng
 
-- [ ] Viết user flows: xem tổng quan → tìm repo → xem chi tiết → so sánh tăng trưởng.
-- [ ] Chốt các trang bản đầu, metric hiển thị và các trạng thái dữ liệu.
-- [ ] Chọn frontend, lớp API/backend nếu cần, thư viện chart và cách chạy local.
-- [ ] Chốt ranh giới giữa ứng dụng tùy chỉnh và dashboard Superset đã có.
+- [x] Viết user flows: xem tổng quan → tìm repo → xem chi tiết → so sánh tăng trưởng.
+- [x] Chốt các trang bản đầu, metric hiển thị và các trạng thái dữ liệu.
+- [x] Chọn frontend, lớp API/backend nếu cần, thư viện chart và cách chạy local.
+- [x] Chốt ranh giới giữa ứng dụng tùy chỉnh và dashboard Superset đã có.
 
 **Đầu ra:** quyết định stack và danh sách màn hình bản đầu có lý do lựa chọn.
 
@@ -41,6 +44,8 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 **Dependency:** không cần pipeline chạy thật.
 
 #### APP-02 — Viết data contract v1
+
+**Trạng thái:** draft đã viết; các checklist dưới đây chờ DE xác nhận trước khi coi là chốt hai phía.
 
 - [ ] Định nghĩa `repository_daily_metrics`: một repo/ngày, khóa, tên cột, kiểu và nullability.
 - [ ] Định nghĩa `repository_metadata`: repo/snapshot date, language, topics, category, ecosystem.
