@@ -23,3 +23,7 @@ Thumbs.db
 .vscode/
 .idea/
 
+
+# Local application environment and test cache
+.venv-app/
+.pytest_cache/
