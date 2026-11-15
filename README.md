@@ -195,3 +195,84 @@ LIMIT 10;
   ```
   *(Thêm cờ `-v` nếu muốn xóa toàn bộ dữ liệu trong các Docker volumes: `docker compose down -v`).*
 
+---
+
+## 🤖 7. Hướng dẫn Tải dữ liệu (~20 MB) & Huấn luyện Model ML trên Máy Cá Nhân
+
+Để phục vụ bài toán dự báo số lượng `star_events` trong 30 ngày tiếp theo (**ML-01 / ML-02 / ML-03**) trên máy cá nhân mà không cần tải hàng trăm GB raw GH Archive, dự án cung cấp chế độ trích xuất giới hạn dung lượng (~20 MB ổ cứng) kết hợp bộ tạo dữ liệu chuẩn **Contract v1**.
+
+### 7.1. Tải dữ liệu thật từ GH Archive về ổ cứng (~18.4 MB Parquet)
+Sử dụng tham số `--max-records 22000` và `--local-only` để tải, giải nén, chuyển sang Parquet nén Snappy và tự động xóa file `.json.gz` tạm:
+
+```bash
+python airflow/scripts/gharchive_extractor.py \
+  --date 2025-01-15 \
+  --hour 14 \
+  --max-records 22000 \
+  --local-only \
+  --output-dir ./airflow/data
+```
+* **Kết quả:** Tạo file `airflow/data/parquet/2025-01-15-14.parquet` chứa **22.000 sự kiện GitHub thật** (~**18.39 MB** trên ổ cứng).
+* Nếu muốn tải nhiều ngày và chỉ lọc 50 repositories phổ biến để nhẹ máy:
+  ```bash
+  python airflow/scripts/gharchive_extractor.py \
+    --date 2025-01-01 \
+    --end-date 2025-01-07 \
+    --hours-step 6 \
+    --filter-default-repos \
+    --local-only \
+    --output-dir ./airflow/data
+  ```
+
+### 7.2. Tổng hợp Dataset theo chuẩn Contract v1 (150 Repos × 320 Ngày)
+Gộp dữ liệu Parquet GH Archive vừa tải với danh mục 150 repositories trong 320 ngày (vượt ngưỡng tối thiểu 239 ngày của `ML-01` / `ML-03`):
+
+```bash
+python -m ml.fetch_github_data \
+  --output ml/runs/github_pc_fixture \
+  --repos 150 \
+  --days 320 \
+  --local-parquet-dir ./airflow/data/parquet
+```
+*(Thêm cờ `--no-github-api` nếu muốn chạy hoàn toàn offline không gọi GitHub REST API).*
+* **Kết quả:** Tạo `ml/runs/github_pc_fixture` gồm **46.425 dòng daily metrics** hoàn chỉnh theo đúng schema `APP-02 Data Contract v1`.
+
+### 7.3. Kiểm tra Readiness Audit, Tạo Features (28 đặc trưng) & Train Model
+Chạy tuần tự các lệnh CLI của module `ml`:
+
+```bash
+# 1. Kiểm tra chất lượng & độ phủ dữ liệu (ML-03 Readiness Audit)
+python -m ml.cli audit \
+  --config ml/configs/smoke.json \
+  --fixture-dir ml/runs/github_pc_fixture \
+  --output ml/runs/github_pc_audit
+
+# 2. Xây dựng tập mẫu học có giám sát (26.445 mẫu hợp lệ sau khi lọc & purge 30 ngày)
+python -m ml.cli build \
+  --config ml/configs/smoke.json \
+  --fixture-dir ml/runs/github_pc_fixture \
+  --output ml/runs/github_pc_dataset
+
+# 3. Huấn luyện & lựa chọn mô hình (Persistence-30d, Zero baseline, Ridge Regression)
+python -m ml.cli train \
+  --config ml/configs/smoke.json \
+  --dataset ml/runs/github_pc_dataset \
+  --output ml/runs/github_pc_model
+
+# 4. Đánh giá độc lập lại mô hình đã lưu trên tập Test
+python -m ml.cli evaluate \
+  --dataset ml/runs/github_pc_dataset \
+  --run ml/runs/github_pc_model \
+  --output ml/runs/github_pc_eval
+```
+
+### 7.4. Bảng thống kê dung lượng & quy mô bộ dữ liệu (~20 MB)
+
+| Thành phần | Đường dẫn | Quy mô dữ liệu | Dung lượng ổ cứng |
+| :--- | :--- | :--- | :--- |
+| **GH Archive Parquet** | `airflow/data/parquet/2025-01-15-14.parquet` | 22.000 sự kiện GitHub thực tế | **~18.39 MB** |
+| **Contract v1 Fixture** | `ml/runs/github_pc_fixture/` | 150 repos × 320 ngày = 46.425 dòng | **~0.24 MB** |
+| **ML Feature Dataset** | `ml/runs/github_pc_dataset/` | 26.445 mẫu × 28 features (`train`: 17.446, `val`: 4.576, `test`: 4.423) | **~0.45 MB** |
+| **Model & Audit Reports** | `ml/runs/github_pc_model/`, `github_pc_audit/`, `github_pc_eval/` | Trọng số Ridge, dự đoán tập test & báo cáo audit | **~0.19 MB** |
+| **Tổng cộng** | | | **~19.27 MB** |
+

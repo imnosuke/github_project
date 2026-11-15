@@ -7,8 +7,9 @@ import gzip
 import json
 import logging
 import os
+from datetime import date, timedelta
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Iterable, List, Optional, Set, Tuple
 
 import boto3
 from botocore.client import Config
@@ -23,6 +24,116 @@ logging.basicConfig(
 logger = logging.getLogger("gharchive_pipeline")
 
 GHARCHIVE_BASE_URL = "https://data.gharchive.org"
+
+# Danh sách 50 repositories mặc định cho chế độ lọc nhẹ trên máy cá nhân (Tracked Scope)
+DEFAULT_TRACKED_REPOS: Tuple[str, ...] = (
+    "apache/airflow",
+    "apache/spark",
+    "apache/kafka",
+    "apache/superset",
+    "apache/iceberg",
+    "ClickHouse/ClickHouse",
+    "dbt-labs/dbt-core",
+    "minio/minio",
+    "duckdb/duckdb",
+    "trinodb/trino",
+    "pola-rs/polars",
+    "pandas-dev/pandas",
+    "numpy/numpy",
+    "scikit-learn/scikit-learn",
+    "pytorch/pytorch",
+    "tensorflow/tensorflow",
+    "huggingface/transformers",
+    "langchain-ai/langchain",
+    "vllm-project/vllm",
+    "ollama/ollama",
+    "ggml-org/llama.cpp",
+    "openai/whisper",
+    "microsoft/DeepSpeed",
+    "ray-project/ray",
+    "mlflow/mlflow",
+    "streamlit/streamlit",
+    "gradio-app/gradio",
+    "fastapi/fastapi",
+    "pydantic/pydantic",
+    "sqlalchemy/sqlalchemy",
+    "prefecthq/prefect",
+    "dagster-io/dagster",
+    "airbytehq/airbyte",
+    "DataDog/datadog-agent",
+    "prometheus/prometheus",
+    "grafana/grafana",
+    "elastic/elasticsearch",
+    "redis/redis",
+    "postgres/postgres",
+    "kubernetes/kubernetes",
+    "docker/compose",
+    "astral-sh/uv",
+    "astral-sh/ruff",
+    "microsoft/vscode",
+    "facebook/react",
+    "vercel/next.js",
+    "vuejs/core",
+    "sveltejs/svelte",
+    "rust-lang/rust",
+    "golang/go",
+)
+
+
+def parse_repo_filter(
+    tracked_repos: Optional[Iterable[str]] = None,
+    use_default_if_env_enabled: bool = True,
+) -> Optional[Set[str]]:
+    """
+    Chuẩn hóa danh sách repo cần lọc (chữ thường 'owner/repo').
+    Trả về None nếu không bật lọc (giữ toàn bộ sự kiện).
+    """
+    if tracked_repos:
+        cleaned = {str(r).strip().lower() for r in tracked_repos if str(r).strip()}
+        return cleaned or None
+
+    env_repos = os.getenv("GHARCHIVE_TRACKED_REPOS", "").strip()
+    if env_repos:
+        cleaned = {r.strip().lower() for r in env_repos.split(",") if r.strip()}
+        return cleaned or None
+
+    if use_default_if_env_enabled and os.getenv("GHARCHIVE_FILTER_DEFAULT_REPOS", "false").lower() in ("1", "true", "yes"):
+        return {r.lower() for r in DEFAULT_TRACKED_REPOS}
+
+    return None
+
+
+def iter_date_hours(
+    start_date: str,
+    end_date: Optional[str] = None,
+    start_hour: int = 0,
+    end_hour: int = 23,
+    hours_step: int = 1,
+) -> List[Tuple[str, int]]:
+    """
+    Sinh danh sách các cặp (date_str, hour) theo khoảng ngày và khung giờ.
+    - hours_step=1: lấy đủ 24 giờ/ngày (chuẩn completeness 24/24).
+    - hours_step>1: lấy mẫu cách giờ (ví dụ step=4 -> 6 giờ/ngày) để chạy nhanh trên máy cá nhân.
+    """
+    s_date = date.fromisoformat(start_date.strip())
+    e_date = date.fromisoformat((end_date or start_date).strip())
+    if s_date > e_date:
+        raise ValueError(f"start_date ({start_date}) không được lớn hơn end_date ({end_date})")
+
+    s_hour = max(0, min(23, int(start_hour)))
+    e_hour = max(0, min(23, int(end_hour)))
+    if s_hour > e_hour:
+        raise ValueError(f"start_hour ({s_hour}) không được lớn hơn end_hour ({e_hour})")
+    step = max(1, int(hours_step))
+
+    targets: List[Tuple[str, int]] = []
+    cur = s_date
+    while cur <= e_date:
+        d_str = cur.isoformat()
+        for h in range(s_hour, e_hour + 1, step):
+            targets.append((d_str, h))
+        cur += timedelta(days=1)
+    return targets
 
 
 def build_gharchive_filename(date_str: str, hour: int) -> str:
@@ -66,18 +177,32 @@ def convert_json_gz_to_parquet(
     raw_gz_path: str,
     output_dir: str = "/opt/airflow/data/parquet",
     batch_size: int = 50000,
+    tracked_repos: Optional[Iterable[str]] = None,
+    max_records_per_file: Optional[int] = None,
 ) -> str:
     """
     Giải nén file .json.gz của GH Archive và chuyển đổi sang định dạng Parquet (nén Snappy).
     Tách các trường quan trọng (id, type, actor, repo, org, created_at, public) thành cột chuẩn,
     và giữ nguyên trường `payload` (vốn có cấu trúc biến động theo từng loại sự kiện) ở dạng JSON string
     để tránh xung đột schema và giúp truy vấn cực nhanh trên Trino/Spark/DuckDB.
+
+    Hỗ trợ lọc theo `tracked_repos` hoặc giới hạn `max_records_per_file` để tiết kiệm RAM/ổ cứng trên máy cá nhân.
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     base_name = os.path.basename(raw_gz_path).replace(".json.gz", ".parquet")
     parquet_path = os.path.join(output_dir, base_name)
 
-    logger.info(f"Đang giải nén và chuyển đổi {raw_gz_path} -> {parquet_path} ...")
+    repo_filter = parse_repo_filter(tracked_repos)
+    if max_records_per_file is None:
+        env_max = os.getenv("GHARCHIVE_MAX_RECORDS_PER_FILE", "").strip()
+        if env_max.isdigit() and int(env_max) > 0:
+            max_records_per_file = int(env_max)
+
+    logger.info(
+        f"Đang giải nén và chuyển đổi {raw_gz_path} -> {parquet_path} "
+        f"(repo_filter={len(repo_filter) if repo_filter else 'ALL'}, "
+        f"max_records={max_records_per_file or 'UNLIMITED'}) ..."
+    )
 
     schema = pa.schema([
         ("event_id", pa.string()),
@@ -95,6 +220,7 @@ def convert_json_gz_to_parquet(
 
     writer = pq.ParquetWriter(parquet_path, schema, compression="snappy")
     total_records = 0
+    scanned_records = 0
     batch_rows = []
 
     def _flush_batch(rows):
@@ -109,13 +235,19 @@ def convert_json_gz_to_parquet(
                 line = line.strip()
                 if not line:
                     continue
+                scanned_records += 1
                 try:
                     record: Dict[str, Any] = json.loads(line)
                 except json.JSONDecodeError:
                     continue
 
-                actor = record.get("actor") or {}
                 repo = record.get("repo") or {}
+                repo_name = repo.get("name")
+                if repo_filter is not None:
+                    if not repo_name or str(repo_name).lower() not in repo_filter:
+                        continue
+
+                actor = record.get("actor") or {}
                 org = record.get("org") or {}
                 payload = record.get("payload") or {}
 
@@ -127,7 +259,7 @@ def convert_json_gz_to_parquet(
                     "actor_id": actor.get("id"),
                     "actor_login": actor.get("login"),
                     "repo_id": repo.get("id"),
-                    "repo_name": repo.get("name"),
+                    "repo_name": repo_name,
                     "org_id": org.get("id"),
                     "org_login": org.get("login"),
                     "payload_json": json.dumps(payload, ensure_ascii=False),
@@ -138,16 +270,23 @@ def convert_json_gz_to_parquet(
                     _flush_batch(batch_rows)
                     batch_rows.clear()
 
+                if max_records_per_file and total_records >= max_records_per_file:
+                    logger.info(f"Đã đạt giới hạn {max_records_per_file:,} events/file, dừng đọc sớm.")
+                    break
+
         if batch_rows:
             _flush_batch(batch_rows)
             batch_rows.clear()
+        elif total_records == 0:
+            # Đảm bảo file Parquet hợp lệ với 0 dòng nếu không có sự kiện khớp bộ lọc
+            writer.write_table(pa.Table.from_pylist([], schema=schema))
     finally:
         writer.close()
 
     parquet_size_mb = os.path.getsize(parquet_path) / (1024 * 1024)
     logger.info(
         f"Hoàn tất chuyển đổi Parquet: {parquet_path} | "
-        f"Tổng số events: {total_records:,} | Dung lượng: {parquet_size_mb:.2f} MB"
+        f"Giữ lại: {total_records:,}/{scanned_records:,} events | Dung lượng: {parquet_size_mb:.2f} MB"
     )
     return parquet_path
 
@@ -213,16 +352,64 @@ def cleanup_local_files(*file_paths: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Chạy độc lập script tải GH Archive -> Parquet -> MinIO")
-    parser.add_argument("--date", required=True, help="Ngày cần tải (YYYY-MM-DD), ví dụ: 2025-01-15")
-    parser.add_argument("--hour", required=True, type=int, help="Giờ cần tải (0-23), ví dụ: 14")
+    parser = argparse.ArgumentParser(description="Chạy độc lập script tải GH Archive -> Parquet -> MinIO (hỗ trợ khoảng ngày)")
+    parser.add_argument("--date", help="Ngày bắt đầu cần tải (YYYY-MM-DD), ví dụ: 2025-01-15")
+    parser.add_argument("--end-date", help="Ngày kết thúc (YYYY-MM-DD, tùy chọn, mặc định bằng --date)")
+    parser.add_argument("--hour", type=int, help="Giờ đơn lẻ cần tải (0-23). Nếu bỏ trống sẽ dùng --start-hour đến --end-hour")
+    parser.add_argument("--start-hour", type=int, default=0, help="Giờ bắt đầu trong ngày (0-23, mặc định: 0)")
+    parser.add_argument("--end-hour", type=int, default=23, help="Giờ kết thúc trong ngày (0-23, mặc định: 23)")
+    parser.add_argument("--hours-step", type=int, default=1, help="Bước nhảy giờ (mặc định 1 = cả 24h; đặt 4 hoặc 6 để lấy mẫu nhẹ cho máy cá nhân)")
+    parser.add_argument("--filter-default-repos", action="store_true", help="Chỉ giữ sự kiện của 50 repo phổ biến mặc định để nhẹ máy")
+    parser.add_argument("--repos", help="Danh sách owner/repo cách nhau dấu phẩy để lọc")
+    parser.add_argument("--max-records", type=int, default=None, help="Giới hạn số dòng tối đa mỗi file Parquet")
     parser.add_argument("--keep-raw", action="store_true", help="Upload thêm cả file gốc .json.gz lên phân vùng bronze/")
+    parser.add_argument("--local-only", action="store_true", help="Chỉ tải và chuyển sang Parquet ở local, không đẩy lên MinIO")
+    parser.add_argument("--output-dir", default="/opt/airflow/data", help="Thư mục gốc lưu dữ liệu tạm (raw & parquet)")
     args = parser.parse_args()
 
-    raw_file = download_gharchive_file(args.date, args.hour)
-    if args.keep_raw:
-        upload_to_minio(raw_file, args.date, args.hour, layer_prefix="bronze/events_raw")
+    if not args.date:
+        parser.error("Cần truyền --date YYYY-MM-DD")
 
-    parquet_file = convert_json_gz_to_parquet(raw_file)
-    upload_to_minio(parquet_file, args.date, args.hour, layer_prefix="bronze/events_parquet")
-    cleanup_local_files(raw_file, parquet_file)
+    s_hour = args.hour if args.hour is not None else args.start_hour
+    e_hour = args.hour if args.hour is not None else args.end_hour
+    targets = iter_date_hours(
+        start_date=args.date,
+        end_date=args.end_date,
+        start_hour=s_hour,
+        end_hour=e_hour,
+        hours_step=args.hours_step,
+    )
+
+    custom_repos = None
+    if args.repos:
+        custom_repos = [r.strip() for r in args.repos.split(",") if r.strip()]
+    elif args.filter_default_repos:
+        custom_repos = list(DEFAULT_TRACKED_REPOS)
+
+    raw_dir = os.path.join(args.output_dir, "raw")
+    parquet_dir = os.path.join(args.output_dir, "parquet")
+
+    logger.info(f"Bắt đầu xử lý {len(targets)} khung giờ từ {targets[0]} đến {targets[-1]}...")
+    for d_str, hr in targets:
+        raw_file = None
+        parquet_file = None
+        try:
+            raw_file = download_gharchive_file(d_str, hr, output_dir=raw_dir)
+            if args.keep_raw and not args.local_only:
+                upload_to_minio(raw_file, d_str, hr, layer_prefix="bronze/events_raw")
+
+            parquet_file = convert_json_gz_to_parquet(
+                raw_file,
+                output_dir=parquet_dir,
+                tracked_repos=custom_repos,
+                max_records_per_file=args.max_records,
+            )
+            if not args.local_only:
+                upload_to_minio(parquet_file, d_str, hr, layer_prefix="bronze/events_parquet")
+        except FileNotFoundError as e:
+            logger.warning(f"Bỏ qua khung giờ {d_str}-{hr}: {e}")
+        finally:
+            if not args.local_only:
+                cleanup_local_files(raw_file, parquet_file)
+            elif raw_file:
+                cleanup_local_files(raw_file)

@@ -20,8 +20,10 @@ if SCRIPTS_DIR not in sys.path:
     sys.path.append(SCRIPTS_DIR)
 
 from gharchive_extractor import (
+    DEFAULT_TRACKED_REPOS,
     download_gharchive_file,
     convert_json_gz_to_parquet,
+    iter_date_hours,
     upload_to_minio,
     cleanup_local_files,
 )
@@ -52,12 +54,42 @@ DBT_PROJECT_DIR = "/opt/airflow/dbt_gharchive"
         "custom_date": Param(
             default="",
             type=["null", "string"],
-            description="(Tùy chọn) Nhập ngày cụ thể YYYY-MM-DD nếu chạy thủ công, để trống sẽ lấy theo khung giờ logical_date (ví dụ: 2025-01-15)",
+            description="(Tùy chọn) Ngày bắt đầu YYYY-MM-DD nếu chạy thủ công, để trống sẽ lấy theo khung giờ logical_date (ví dụ: 2025-01-15)",
+        ),
+        "end_date": Param(
+            default="",
+            type=["null", "string"],
+            description="(Tùy chọn) Ngày kết thúc YYYY-MM-DD để tải hàng loạt nhiều ngày liên tiếp (để trống nếu chỉ tải 1 ngày custom_date)",
         ),
         "custom_hour": Param(
             default=None,
             type=["null", "integer"],
-            description="(Tùy chọn) Nhập giờ cụ thể (0-23) nếu chạy thủ công, để trống sẽ lấy theo giờ logical_date",
+            description="(Tùy chọn) Giờ cụ thể (0-23). Nếu để null khi có custom_date, pipeline sẽ tải dải giờ từ start_hour đến end_hour",
+        ),
+        "start_hour": Param(
+            default=0,
+            type="integer",
+            description="Giờ bắt đầu (0-23) khi tải nhiều giờ/nhiều ngày",
+        ),
+        "end_hour": Param(
+            default=23,
+            type="integer",
+            description="Giờ kết thúc (0-23) khi tải nhiều giờ/nhiều ngày",
+        ),
+        "hours_step": Param(
+            default=1,
+            type="integer",
+            description="Bước nhảy giờ (1 = lấy đủ 24 giờ/ngày; 4 hoặc 6 = lấy mẫu nhẹ cho máy cá nhân)",
+        ),
+        "filter_default_repos": Param(
+            default=True,
+            type="boolean",
+            description="Bật lọc chỉ giữ 50 repositories phổ biến (giảm ~98% dung lượng RAM/ổ cứng cho máy cá nhân mà vẫn đủ dữ liệu train model)",
+        ),
+        "max_records_per_file": Param(
+            default=None,
+            type=["null", "integer"],
+            description="(Tùy chọn) Giới hạn số events tối đa giữ lại trên mỗi file giờ (ví dụ: 50000)",
         ),
         "upload_raw_gz": Param(
             default=False,
@@ -70,94 +102,178 @@ def gharchive_medallion_pipeline():
 
     @task(task_id="resolve_target_datetime")
     def resolve_target_datetime(**context) -> dict:
-        """Xác định ngày (YYYY-MM-DD) và giờ (0-23) cần lấy từ GH Archive."""
+        """Xác định danh sách các khung giờ (date_str, hour) cần lấy từ GH Archive."""
         params = context["params"]
-        custom_date = params.get("custom_date")
+        custom_date = (params.get("custom_date") or "").strip()
+        end_date = (params.get("end_date") or "").strip() or custom_date
         custom_hour = params.get("custom_hour")
+        filter_default_repos = bool(params.get("filter_default_repos", True))
+        max_records_per_file = params.get("max_records_per_file")
+        upload_raw_gz = bool(params.get("upload_raw_gz", False))
 
-        if custom_date and custom_hour is not None:
+        if custom_date:
+            if custom_hour is not None:
+                s_hour = e_hour = int(custom_hour)
+                step = 1
+            else:
+                s_hour = int(params.get("start_hour", 0))
+                e_hour = int(params.get("end_hour", 23))
+                step = int(params.get("hours_step", 1))
+
+            targets = [
+                {"date_str": d, "hour": h}
+                for d, h in iter_date_hours(
+                    start_date=custom_date,
+                    end_date=end_date,
+                    start_hour=s_hour,
+                    end_hour=e_hour,
+                    hours_step=step,
+                )
+            ]
             return {
-                "date_str": str(custom_date).strip(),
-                "hour": int(custom_hour),
-                "upload_raw_gz": bool(params.get("upload_raw_gz", False)),
+                "date_str": targets[0]["date_str"],
+                "hour": targets[0]["hour"],
+                "targets": targets,
+                "filter_default_repos": filter_default_repos,
+                "max_records_per_file": max_records_per_file,
+                "upload_raw_gz": upload_raw_gz,
             }
 
         dt = context.get("data_interval_start") or context.get("logical_date")
         target_dt = dt - timedelta(hours=1)
+        d_str = target_dt.strftime("%Y-%m-%d")
+        hr = int(target_dt.hour)
 
         return {
-            "date_str": target_dt.strftime("%Y-%m-%d"),
-            "hour": int(target_dt.hour),
-            "upload_raw_gz": bool(params.get("upload_raw_gz", False)),
+            "date_str": d_str,
+            "hour": hr,
+            "targets": [{"date_str": d_str, "hour": hr}],
+            "filter_default_repos": filter_default_repos,
+            "max_records_per_file": max_records_per_file,
+            "upload_raw_gz": upload_raw_gz,
         }
 
     @task(task_id="download_from_gharchive")
     def task_download(target: dict) -> dict:
-        """Tải file {YYYY-MM-DD}-{H}.json.gz từ https://data.gharchive.org/"""
-        local_gz_path = download_gharchive_file(
-            date_str=target["date_str"],
-            hour=target["hour"],
-            output_dir="/opt/airflow/data/raw",
-        )
+        """Tải một hoặc nhiều file {YYYY-MM-DD}-{H}.json.gz từ https://data.gharchive.org/"""
+        targets = target.get("targets") or [{"date_str": target["date_str"], "hour": target["hour"]}]
+        downloaded_items = []
+
+        for item in targets:
+            try:
+                local_gz_path = download_gharchive_file(
+                    date_str=item["date_str"],
+                    hour=item["hour"],
+                    output_dir="/opt/airflow/data/raw",
+                )
+                downloaded_items.append({
+                    "date_str": item["date_str"],
+                    "hour": item["hour"],
+                    "raw_gz_path": local_gz_path,
+                })
+            except FileNotFoundError as exc:
+                logger.warning(f"Bỏ qua file không tồn tại trên GH Archive: {exc}")
+                if len(targets) == 1:
+                    raise
+
+        if not downloaded_items:
+            raise RuntimeError("Không tải được bất kỳ file GH Archive nào trong khoảng yêu cầu.")
+
         return {
             **target,
-            "raw_gz_path": local_gz_path,
+            "raw_gz_path": downloaded_items[0]["raw_gz_path"],
+            "items": downloaded_items,
         }
 
     @task(task_id="convert_to_parquet")
     def task_convert_parquet(meta: dict) -> dict:
-        """Giải nén file .json.gz và chuẩn hóa sang định dạng Parquet (nén Snappy)."""
-        parquet_path = convert_json_gz_to_parquet(
-            raw_gz_path=meta["raw_gz_path"],
-            output_dir="/opt/airflow/data/parquet",
-        )
+        """Giải nén các file .json.gz và chuẩn hóa sang định dạng Parquet (nén Snappy)."""
+        items = meta.get("items") or [
+            {"date_str": meta["date_str"], "hour": meta["hour"], "raw_gz_path": meta["raw_gz_path"]}
+        ]
+        tracked_repos = list(DEFAULT_TRACKED_REPOS) if meta.get("filter_default_repos") else None
+        max_records = meta.get("max_records_per_file")
+
+        converted_items = []
+        for item in items:
+            parquet_path = convert_json_gz_to_parquet(
+                raw_gz_path=item["raw_gz_path"],
+                output_dir="/opt/airflow/data/parquet",
+                tracked_repos=tracked_repos,
+                max_records_per_file=max_records,
+            )
+            converted_items.append({
+                **item,
+                "parquet_path": parquet_path,
+            })
+
         return {
             **meta,
-            "parquet_path": parquet_path,
+            "parquet_path": converted_items[0]["parquet_path"],
+            "items": converted_items,
         }
 
     @task(task_id="upload_to_minio_s3")
     def task_upload_minio(meta: dict) -> dict:
-        """Đẩy file Parquet lên S3 MinIO theo phân vùng year/month/day."""
+        """Đẩy các file Parquet lên S3 MinIO theo phân vùng year/month/day."""
         bucket_name = os.getenv("MINIO_BUCKET_NAME", "gharchive")
-        uploaded_uris = {}
+        items = meta.get("items") or [
+            {
+                "date_str": meta["date_str"],
+                "hour": meta["hour"],
+                "raw_gz_path": meta.get("raw_gz_path"),
+                "parquet_path": meta["parquet_path"],
+            }
+        ]
+        uploaded_items = []
 
-        if meta.get("upload_raw_gz"):
-            raw_uri = upload_to_minio(
-                local_file_path=meta["raw_gz_path"],
-                date_str=meta["date_str"],
-                hour=meta["hour"],
+        for item in items:
+            item_uris = {}
+            if meta.get("upload_raw_gz") and item.get("raw_gz_path"):
+                raw_uri = upload_to_minio(
+                    local_file_path=item["raw_gz_path"],
+                    date_str=item["date_str"],
+                    hour=item["hour"],
+                    bucket_name=bucket_name,
+                    layer_prefix="bronze/events_raw",
+                )
+                item_uris["bronze_raw_uri"] = raw_uri
+
+            parquet_uri = upload_to_minio(
+                local_file_path=item["parquet_path"],
+                date_str=item["date_str"],
+                hour=item["hour"],
                 bucket_name=bucket_name,
-                layer_prefix="bronze/events_raw",
+                layer_prefix="bronze/events_parquet",
             )
-            uploaded_uris["bronze_raw_uri"] = raw_uri
-
-        parquet_uri = upload_to_minio(
-            local_file_path=meta["parquet_path"],
-            date_str=meta["date_str"],
-            hour=meta["hour"],
-            bucket_name=bucket_name,
-            layer_prefix="bronze/events_parquet",
-        )
-        uploaded_uris["bronze_parquet_uri"] = parquet_uri
+            item_uris["bronze_parquet_uri"] = parquet_uri
+            uploaded_items.append({**item, **item_uris})
 
         return {
             **meta,
-            **uploaded_uris,
+            "bronze_parquet_uri": uploaded_items[-1]["bronze_parquet_uri"],
+            "items": uploaded_items,
         }
 
     @task(task_id="load_to_clickhouse_bronze")
     def task_load_clickhouse_bronze(meta: dict) -> dict:
-        """Nạp trực tiếp file Parquet từ MinIO vào bảng ClickHouse `bronze.gharchive_events`."""
-        inserted_rows = load_minio_parquet_to_bronze(
-            date_str=meta["date_str"],
-            hour=meta["hour"],
-            bucket_name=os.getenv("MINIO_BUCKET_NAME", "gharchive"),
-            layer_prefix="bronze/events_parquet",
-        )
+        """Nạp trực tiếp các file Parquet từ MinIO vào bảng ClickHouse `bronze.gharchive_events`."""
+        bucket_name = os.getenv("MINIO_BUCKET_NAME", "gharchive")
+        items = meta.get("items") or [{"date_str": meta["date_str"], "hour": meta["hour"]}]
+        total_inserted = 0
+
+        for item in items:
+            inserted_rows = load_minio_parquet_to_bronze(
+                date_str=item["date_str"],
+                hour=item["hour"],
+                bucket_name=bucket_name,
+                layer_prefix="bronze/events_parquet",
+            )
+            total_inserted += inserted_rows
+
         return {
             **meta,
-            "bronze_inserted_rows": inserted_rows,
+            "bronze_inserted_rows": total_inserted,
         }
 
     @task(task_id="dbt_transform_silver_gold")
@@ -194,10 +310,13 @@ def gharchive_medallion_pipeline():
     @task(task_id="cleanup_temp_files", trigger_rule="all_done")
     def task_cleanup(meta: dict) -> str:
         """Xóa các file tạm (.json.gz và .parquet) trên container sau khi pipeline chạy xong."""
-        cleanup_local_files(
-            meta.get("raw_gz_path"),
-            meta.get("parquet_path"),
-        )
+        if not meta:
+            return "Cleaned up"
+        paths_to_clean = [meta.get("raw_gz_path"), meta.get("parquet_path")]
+        for item in meta.get("items") or []:
+            paths_to_clean.append(item.get("raw_gz_path"))
+            paths_to_clean.append(item.get("parquet_path"))
+        cleanup_local_files(*paths_to_clean)
         return meta.get("bronze_parquet_uri", "Cleaned up")
 
     # Luồng thực thi (Pipeline Dependency)
