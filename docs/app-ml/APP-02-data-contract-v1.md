@@ -2,14 +2,14 @@
 
 Ngày: 14/11/2026. Contract version: **1.0.0-draft**.
 
-Trạng thái: **hoàn tất bản draft phía ứng dụng, chờ DE xác nhận trước tích hợp live**. Đây là schema logic cho fixture/adapter, không phải các bảng đã tồn tại hay cam kết pipeline hiện tại đáp ứng. Không thay đổi SQL/pipeline trong task này.
+Trạng thái: **phía ứng dụng đã chốt cách tích hợp thử bằng snapshot tĩnh**. Contract live vẫn ở `1.0.0-draft` và chờ DE xác nhận. Các quyết định cho snapshot nằm ở mục 10.
 
 ## 1. Quy ước chung
 
 - Tên field dùng snake_case. ID repo là số nguyên dương, không dùng tên repo làm khóa vì repo có thể đổi tên.
 - Ngày truyền dưới dạng `YYYY-MM-DD`; timestamps ISO 8601 UTC có hậu tố `Z`. ClickHouse dùng UTC tường minh; Parquet timestamp có timezone UTC.
 - `int64` là integer signed 64-bit, counts không âm; `string`, `bool`, `date`, `timestamp[UTC]`, `list<string>` là kiểu logic. Adapter phải validate, không silently coerce giá trị lỗi thành zero.
-- Mỗi lần đọc có envelope: `contract_version`, `data_source` (`fixture` hoặc `live`), `publication_id`, `published_at`. Các datasets trong một lần render phải cùng publication. `publication_id` là identifier của một lần công bố Gold nhất quán, không phải số phiên bản schema.
+- Mỗi lần đọc có envelope gồm `contract_version`, `data_source`, `publication_id` và `published_at`. Ứng dụng dùng `fixture` cho demo tổng hợp, `snapshot` cho đợt trích xuất tĩnh và `live` cho Gold thật. Các datasets trong một lần render phải cùng publication. `publication_id` xác định một đợt trích xuất hoặc công bố nhất quán.
 - DE có thể dùng bảng/view tên khác; adapter ánh xạ về tên logic bên dưới. Breaking changes tăng major; thêm optional fields có default tăng minor; sửa tài liệu tăng patch. Consumer từ chối major chưa hỗ trợ.
 - Source timezone, event date, ingestion time và publication time là các khái niệm riêng. Không lấy max event timestamp để kết luận completeness.
 
@@ -193,4 +193,24 @@ Producer chịu trách nhiệm dedup, file completeness, payload quality, Gold c
 - [ ] Refresh cadence, SLA và expected_complete_through.
 - [ ] Metadata availability và snapshot semantics.
 
-APP-02 đạt mức draft để APP-03 phát triển fixture độc lập. Chưa đánh dấu nghiệm thu hai phía hoặc tích hợp pipeline thành công. Prediction contract nằm ở ML-04 sau khi ML-01 chốt target, không ép schema score/regression ở giai đoạn này.
+Prediction contract nằm ở ML-04.
+
+## 10. Quyết định phía ứng dụng cho snapshot tĩnh
+
+Phạm vi là tích hợp thử file trích xuất từ GitHub hoặc GH Archive khi DE bàn giao. UI ghi rõ nguồn snapshot và thời điểm trích xuất. Mỗi đợt trích xuất có một `publication_id` cố định. Các file dùng chung trong một lần đọc thuộc cùng publication.
+
+| Mục | Quyết định cho snapshot |
+| --- | --- |
+| Schema và scope | Dùng GitHub `repository_id` thật, ngày UTC và khóa `(repository_id, date)` cho metrics theo ngày. Registry dùng danh sách repo cố định của đợt trích xuất. Nếu thiếu lịch sử theo dõi, chỉ dùng phạm vi repo và ngày có bằng chứng từ đợt trích xuất. |
+| Độ phủ và giá trị zero | Dùng `provisional` nếu biết dữ liệu trong ngày chỉ có một phần. Thiếu bằng chứng độ phủ thì UI hiển thị `unknown` theo quy tắc thiếu status row ở mục 5. Dùng `missing` khi có bằng chứng ngày đó chưa có output usable. Chỉ điền `0` cho repo thuộc scope vào ngày `complete` có bằng chứng đủ 24 giờ, qua kiểm tra chất lượng và thuộc cùng publication. Loại các ngày chưa complete khỏi KPI hoàn chỉnh và cửa sổ growth. |
+| Metric | Ưu tiên đối soát `total_events`, `star_events` (`WatchEvent`) và `fork_events` (`ForkEvent`) từ event gốc hoặc aggregate có định nghĩa rõ. Nếu snapshot có lấy mẫu, số đếm chỉ mô tả dữ liệu trong mẫu. Chỉ dùng actor, commits, PR và issue khi có đủ trường và áp dụng được định nghĩa ở mục 3. Metric thiếu bằng chứng để `null` trong kết quả tích hợp thử. Một ngày chỉ đạt contract khi đáp ứng đầy đủ null policy ở mục 3. |
+| Metadata | Nếu có GitHub API snapshot, giữ `observed_at` từ lần quan sát thực. `current_stars` và `current_forks` chỉ là số đếm tại thời điểm quan sát. Khi thiếu metadata, dùng tên từ registry và ẩn bộ lọc phụ thuộc metadata. |
+| Freshness và phục vụ dữ liệu | Đọc file theo snapshot. Giữ `expected_complete_through` chưa xác định cho tới khi có SLA được xác nhận. Việc chọn view ClickHouse, phân quyền chỉ đọc và kiểm tra tính nhất quán khi dbt rebuild thuộc APP-07 live. |
+
+### Thông tin kèm file và cách kiểm tra
+
+Manifest bàn giao ghi nguồn, khoảng ngày/giờ UTC thực sự có mặt, danh sách GitHub repo ID hoặc bộ lọc đã dùng, cách lấy mẫu/giới hạn dòng nếu có, và thời điểm trích xuất. Với file tổng hợp, ghi thêm định nghĩa các metric. Dùng manifest để kiểm tra scope và độ phủ trước khi diễn giải một repo/ngày thiếu dòng.
+
+- Khi có file, kiểm tra schema, ID, khóa trùng và phạm vi, rồi đối soát các metric có đủ dữ liệu cho một vài repo/ngày. Metadata API hoặc event lấy mẫu dùng được để thử đường đọc và trạng thái dữ liệu một phần.
+- Một ngày đủ 24 giờ trên toàn scope, qua quality gates và có metrics đúng contract là ca đối soát đầu tiên cho APP-07. Growth 30 ngày cần hai cửa sổ liền nhau, tổng cộng 60 ngày complete cho repo được xét.
+- Kết quả snapshot ghi theo bằng chứng thực tế. Các mục xác nhận live ở mục 9 vẫn chờ DE. ML-03 giữ yêu cầu Gold thật và bằng chứng dữ liệu đã có tại thời điểm dự báo.
