@@ -54,3 +54,16 @@ Kết quả cuối: `python3 -m pytest apps/streamlit/tests -q` — **44 passed 
 ## Việc còn lại để hoàn tất APP-07
 
 DE xác nhận APP-02; bàn giao registry, status, publication, metadata và mapping Gold; implement live adapter có query ngày/pagination/limits; kiểm tra schema/completeness/freshness; đối soát một ngày rồi nhiều tuần lịch sử. APP-07 trong plan vẫn chưa hoàn tất.
+
+## Ca đối soát Gold ngày 2025-01-15 UTC
+
+Chạy [truy vấn chỉ đọc](app-07-reconcile-gold.sql) trên ClickHouse sau khi DE xác nhận đủ 24 giờ cho hai repo. Snapshot đi kèm chứa Parquet theo giờ, bảng tổng hợp và manifest. [Dữ liệu đối soát](../../apps/streamlit/data/snapshots/gharchive-2025-01-15/manifest.json)
+
+| Repository ID | Repo | Total events | Star events | Fork events |
+| --- | --- | ---: | ---: | ---: |
+| 33884891 | `apache/airflow` | 299 | 16 | 8 |
+| 39464018 | `apache/superset` | 217 | 17 | 11 |
+
+Mapping ban đầu từ `gold.gold_repo_daily_activity` sang APP-02 dùng `repo_id` → `repository_id`, `event_date` → `date`, `total_events` → `total_events`, `stars_gained` → `star_events` và `forks_count` → `fork_events`. Mỗi repo phải có đúng một dòng Gold cho ngày đó và kết quả phải là `match`. Nếu lệch, kiểm tra đủ giờ, scope, chuyển đổi UTC và dedup `event_id` từ Bronze qua Silver trước khi chỉnh mapping.
+
+Khi bàn giao, ghi kết quả hai hàng cùng tên view/schema, publication hoặc thời điểm query và bằng chứng độ phủ 24 giờ. Phía ứng dụng cần địa chỉ ClickHouse, tài khoản chỉ đọc qua kênh cấu hình phía server và mapping các bảng registry, status, publication trước khi bật adapter live.
