@@ -59,7 +59,7 @@ $env:APP_SNAPSHOT_DIR = (Resolve-Path 'apps/streamlit/data/snapshots/gharchive-2
 python -m streamlit run apps/streamlit/app.py
 ```
 
-`APP_SNAPSHOT_DIR` trỏ tới thư mục có `manifest.json` và các bảng Parquet theo APP-02. Snapshot ví dụ bao phủ ngày 2025-01-15 UTC cho `apache/airflow` và `apache/superset`. Manifest ghi trạng thái, danh sách giờ đã xử lý và checksum của các file theo giờ từ lần trích xuất local. Repo chứa các bảng tổng hợp theo ngày cho ứng dụng.
+`APP_SNAPSHOT_DIR` trỏ tới thư mục có `manifest.json` và các bảng Parquet theo APP-02. Snapshot ví dụ bao phủ ngày 2025-01-15 UTC cho `apache/airflow` và `apache/superset`. Thư mục `parquet/` chứa đủ 24 file theo giờ để đối soát các bảng tổng hợp. Manifest ghi trạng thái, checksum của từng file và lần che thông tin đăng nhập trong một URL ở nội dung bình luận.
 
 APP-06: Growth dùng end date làm anchor, tự đọc đủ hai cửa sổ liên tiếp; start date chung chỉ áp dụng Overview/Explorer. Không công bố tổng KPI cho kỳ incomplete, không xếp hạng các repo thiếu lịch sử.
 

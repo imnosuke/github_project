@@ -158,7 +158,9 @@
       "malformed_records": 0,
       "retained_records": 10,
       "parquet": "parquet/2025-01-15-8.parquet",
-      "parquet_sha256": "adf8915828dc27b763d09fbefa9b30a3140187c204285679ff9268f1fb3dbf92"
+      "parquet_sha256": "868315e5b39bd0b35f6880dbc5db612b094da34d90c63bcb377db6ba3dd37076",
+      "local_parquet_sha256": "adf8915828dc27b763d09fbefa9b30a3140187c204285679ff9268f1fb3dbf92",
+      "payload_url_credentials_redacted": 1
     },
     {
       "hour_utc": 9,
@@ -436,6 +438,6 @@
       "active_contributors": null
     }
   ],
-  "hourly_parquet_included": false,
-  "hourly_parquet_note": "The per-hour Parquet paths and checksums document the local extraction. This export contains the daily tables only."
+  "hourly_parquet_included": true,
+  "hourly_parquet_note": "The hourly Parquet paths and hashes refer to this export. One credential-like URL was redacted from a comment payload. The affected file also records the original local Parquet hash."
 }
