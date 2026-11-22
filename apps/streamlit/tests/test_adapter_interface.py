@@ -107,3 +107,20 @@ def test_clickhouse_source_does_not_fall_back(monkeypatch):
         get_adapter('clickhouse')
     with pytest.raises(ValueError, match='APP_DATA_SOURCE'):
         get_adapter('unknown')
+
+
+def test_clickhouse_snapshot_rejects_gold_metric_mismatch(monkeypatch):
+    from apps.streamlit.data.clickhouse_snapshot import ClickHouseSnapshotAdapter
+
+    directory = Path(__file__).resolve().parents[1] / 'data/snapshots/gharchive-2025-01-15'
+    reference = get_adapter('snapshot', directory)
+    rows = reference.tables['repository_daily_metrics'].to_dict('records')
+    monkeypatch.setenv('APP_CLICKHOUSE_HOST', 'localhost')
+    monkeypatch.setattr(ClickHouseSnapshotAdapter, 'read_gold', staticmethod(lambda *_: rows))
+
+    gold = get_adapter('clickhouse_snapshot', directory)
+    assert gold.overview('2025-01-15', '2025-01-15')['totals']['total_events'] == 516
+
+    rows[0]['star_events'] -= 1
+    with pytest.raises(ValueError, match='Gold metrics do not match'):
+        get_adapter('clickhouse_snapshot', directory)

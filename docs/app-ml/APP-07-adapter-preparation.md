@@ -67,3 +67,7 @@ Chạy [truy vấn chỉ đọc](app-07-reconcile-gold.sql) trên ClickHouse sau
 Mapping ban đầu từ `gold.gold_repo_daily_activity` sang APP-02 dùng `repo_id` → `repository_id`, `event_date` → `date`, `total_events` → `total_events`, `stars_gained` → `star_events` và `forks_count` → `fork_events`. Mỗi repo phải có đúng một dòng Gold cho ngày đó và kết quả phải là `match`. Nếu lệch, kiểm tra đủ giờ, scope, chuyển đổi UTC và dedup `event_id` từ Bronze qua Silver trước khi chỉnh mapping.
 
 Khi bàn giao, ghi kết quả hai hàng cùng tên view/schema, publication hoặc thời điểm query và bằng chứng độ phủ 24 giờ. Phía ứng dụng cần địa chỉ ClickHouse, tài khoản chỉ đọc qua kênh cấu hình phía server và mapping các bảng registry, status, publication trước khi bật adapter live.
+
+### Thử nghiệm qua HTTP trên máy local
+
+ClickHouse 24.3.12.75 UTC đã nạp 516 event từ 24 tệp giờ vào Bronze, giữ 516 event ở Silver và tạo hai hàng Gold. Truy vấn đối soát trả `match` cho cả hai repo. Chế độ `clickhouse_snapshot` cho phép Streamlit đọc metrics từ Gold qua tài khoản chỉ đọc và kiểm tra chúng với snapshot một ngày trước khi hiển thị. Các bảng registry, metadata và status vẫn đến từ snapshot tham chiếu. [Cấu hình chạy](../../apps/streamlit/README.md#thử-đọc-gold-trên-clickhouse-local)

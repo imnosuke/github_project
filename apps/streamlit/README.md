@@ -61,6 +61,22 @@ python -m streamlit run apps/streamlit/app.py
 
 `APP_SNAPSHOT_DIR` trỏ tới thư mục có `manifest.json` và các bảng Parquet theo APP-02. Snapshot ví dụ bao phủ ngày 2025-01-15 UTC cho `apache/airflow` và `apache/superset`. Thư mục `parquet/` chứa đủ 24 file theo giờ để đối soát các bảng tổng hợp. Manifest ghi trạng thái, checksum của từng file và lần che thông tin đăng nhập trong một URL ở nội dung bình luận.
 
+### Thử đọc Gold trên ClickHouse local
+
+Chế độ `clickhouse_snapshot` chạy với ClickHouse loopback đã nạp Silver/Gold cho cùng ngày và cùng phạm vi repo. Registry, metadata và trạng thái ngày lấy từ snapshot tham chiếu. Số liệu hiển thị đến từ bảng Gold và chỉ được chấp nhận khi khớp snapshot.
+
+```powershell
+$env:APP_DATA_SOURCE = 'clickhouse_snapshot'
+$env:APP_SNAPSHOT_DIR = (Resolve-Path 'apps/streamlit/data/snapshots/gharchive-2025-01-15').Path
+$env:APP_CLICKHOUSE_HOST = '127.0.0.1'
+$env:APP_CLICKHOUSE_PORT = '18123'
+$env:APP_CLICKHOUSE_SECURE = 'false'
+$env:APP_CLICKHOUSE_USER = 'reposcope_reader'
+python -m streamlit run apps/streamlit/app.py
+```
+
+Ví dụ dùng cổng của lượt thử APP-07. Đặt cổng và cấu hình người dùng theo ClickHouse local đang chạy. Tích hợp Gold live vẫn chờ các bảng phục vụ theo contract và xác nhận từ DE.
+
 APP-06: Growth dùng end date làm anchor, tự đọc đủ hai cửa sổ liên tiếp; start date chung chỉ áp dụng Overview/Explorer. Không công bố tổng KPI cho kỳ incomplete, không xếp hạng các repo thiếu lịch sử.
 
 ## Chuẩn bị APP-07
