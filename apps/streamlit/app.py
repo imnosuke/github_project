@@ -1,4 +1,4 @@
-"""APP-04: local Streamlit shell consuming the fixture adapter."""
+"""Local Streamlit application for repository analytics."""
 from datetime import date
 import os
 from pathlib import Path
@@ -29,12 +29,14 @@ def main():
     st.caption("GitHub activity · Repository Explorer · Growth Analytics")
     source = os.getenv("APP_DATA_SOURCE", "fixture")
     directory = os.getenv("APP_FIXTURE_DIR") or str(Path(__file__).parent / "data" / "fixtures")
+    if source == "snapshot":
+        directory = os.getenv("APP_SNAPSHOT_DIR")
     try:
         with st.spinner("Đang kiểm tra và tải dữ liệu…"):
             adapter = load_adapter(source, directory, interface_version="app-07-v1")
             envelope = adapter.publication()
     except Exception as exc:
-        st.error("Không thể tải nguồn dữ liệu. Kiểm tra cấu hình hoặc tạo lại fixture.")
+        st.error("Không thể tải nguồn dữ liệu. Kiểm tra cấu hình và thư mục dữ liệu.")
         with st.expander("Chi tiết lỗi"):
             st.code(str(exc))
         if st.button("Thử lại"):
@@ -44,6 +46,8 @@ def main():
 
     if envelope["data_source"] == "fixture":
         st.warning("DEMO — Dữ liệu tổng hợp, không phải hoạt động GitHub thực tế hoặc kết quả ML.")
+    elif envelope["data_source"] == "snapshot":
+        st.info("Snapshot tĩnh từ GH Archive · Số liệu theo repo và ngày trong đợt trích xuất.")
     with st.sidebar:
         st.header("Điều hướng")
         page = st.radio("Trang", ["Overview", "Repository Explorer", "Growth Analytics"], key="page")
@@ -57,7 +61,7 @@ def main():
 
     bounds = adapter.date_bounds()
     if bounds is None:
-        st.info("Nguồn chưa có ngày dữ liệu nào. Hãy kiểm tra fixture hoặc chờ lần công bố tiếp theo.")
+        st.info("Nguồn chưa có ngày dữ liệu nào. Hãy kiểm tra thư mục dữ liệu hoặc chờ lần công bố tiếp theo.")
         return
     lower, upper = (date.fromisoformat(value) for value in bounds)
     latest = adapter.latest_complete_date()

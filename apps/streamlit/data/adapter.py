@@ -1,4 +1,4 @@
-"""Fixture-backed contract v1 adapter; no UI or pipeline dependency."""
+"""File-backed contract v1 adapters with no UI or pipeline dependency."""
 from __future__ import annotations
 
 import json
@@ -52,11 +52,13 @@ class DataAdapter(Protocol):
 
 
 class FixtureAdapter:
+    source = "fixture"
+
     def __init__(self, directory: str | Path):
         root = Path(directory)
-        self.envelope = json.loads((root / "manifest.json").read_text())
-        if self.envelope.get("data_source") != "fixture":
-            raise ValueError("Fixture adapter requires fixture source")
+        self.envelope = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+        if self.envelope.get("data_source") != self.source:
+            raise ValueError(f"{type(self).__name__} requires {self.source} source")
         if self.envelope.get("contract_version") != "1.0.0-draft":
             raise ValueError("Unsupported contract version")
         self.tables = {name: pd.read_parquet(root / f"{name}.parquet") for name in KEYS}
@@ -243,11 +245,19 @@ class FixtureAdapter:
                                                 ascending=[False, False, True], na_position="last").reset_index(drop=True)
 
 
+class SnapshotAdapter(FixtureAdapter):
+    source = "snapshot"
+
+
 def get_adapter(source="fixture", directory=None) -> DataAdapter:
     if source == "clickhouse":
         from .config import ClickHouseConfig
         ClickHouseConfig.from_env()
         raise NotImplementedError("ClickHouse configuration is valid, but live adapter is not implemented; APP-07 awaits DE contract confirmation")
+    if source == "snapshot":
+        if not directory:
+            raise ValueError("APP_SNAPSHOT_DIR is required for snapshot data")
+        return SnapshotAdapter(directory)
     if source != "fixture":
-        raise ValueError("APP_DATA_SOURCE must be fixture or clickhouse")
+        raise ValueError("APP_DATA_SOURCE must be fixture, snapshot or clickhouse")
     return FixtureAdapter(directory or Path(__file__).parent / "fixtures")

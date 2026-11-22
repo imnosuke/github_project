@@ -51,6 +51,16 @@ streamlit run apps/streamlit/app.py
 
 Có ba trang điều hướng, bộ lọc ngày dùng chung, nhãn DEMO và trạng thái completeness/freshness. Overview có KPI/trend; Growth có ranking 7/30 ngày và danh sách loại do thiếu dữ liệu; Explorer có filters, pagination, detail và comparison (APP-05). `APP_DATA_SOURCE=fixture` là mặc định; `APP_FIXTURE_DIR` tùy chọn chỉ tới bộ fixture khác. Nút tải lại làm mới cache.
 
+Để mở snapshot GH Archive đi kèm repo, chạy từ root repo bằng PowerShell.
+
+```powershell
+$env:APP_DATA_SOURCE = 'snapshot'
+$env:APP_SNAPSHOT_DIR = (Resolve-Path 'apps/streamlit/data/snapshots/gharchive-2025-01-15').Path
+python -m streamlit run apps/streamlit/app.py
+```
+
+`APP_SNAPSHOT_DIR` trỏ tới thư mục có `manifest.json` và các bảng Parquet theo APP-02. Snapshot ví dụ bao phủ ngày 2025-01-15 UTC cho `apache/airflow` và `apache/superset`. Thư mục `parquet/` chứa đủ 24 file theo giờ để đối soát các bảng tổng hợp. Manifest ghi trạng thái, checksum của từng file và lần che thông tin đăng nhập trong một URL ở nội dung bình luận.
+
 APP-06: Growth dùng end date làm anchor, tự đọc đủ hai cửa sổ liên tiếp; start date chung chỉ áp dụng Overview/Explorer. Không công bố tổng KPI cho kỳ incomplete, không xếp hạng các repo thiếu lịch sử.
 
 ## Chuẩn bị APP-07

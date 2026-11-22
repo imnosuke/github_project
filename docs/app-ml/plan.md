@@ -50,7 +50,7 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### APP-02 — Viết data contract v1
 
-**Trạng thái:** draft đã viết; các checklist dưới đây chờ DE xác nhận trước khi coi là chốt hai phía.
+**Trạng thái:** phía ứng dụng đã chốt [cách tích hợp thử bằng snapshot tĩnh](APP-02-data-contract-v1.md#10-quyết-định-phía-ứng-dụng-cho-snapshot-tĩnh). Các checklist dưới đây là phần xác nhận hai phía cho Gold live.
 
 - [ ] Định nghĩa `repository_daily_metrics`: một repo/ngày, khóa, tên cột, kiểu và nullability.
 - [ ] Định nghĩa `repository_metadata`: repo/snapshot date, language, topics, category, ecosystem.
@@ -134,6 +134,8 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 #### APP-07 — Adapter ClickHouse/API và kiểm tra contract
 
 **Chuẩn bị local:** đã tách truy cập bảng thô khỏi UI, bổ sung interface và cấu hình ClickHouse; [chi tiết](APP-07-adapter-preparation.md). Các checklist tích hợp thật bên dưới vẫn chưa hoàn tất.
+
+**Đã tích hợp thử snapshot GH Archive:** ngày 2025-01-15 UTC cho `apache/airflow` và `apache/superset`. Đã xử lý đủ 24 tệp giờ, giữ 516 sự kiện và đối chiếu tổng event, star event, fork event từ Parquet theo giờ. Cả ba trang Streamlit đọc được snapshot. Khi có Gold live cùng scope, dùng ngày này làm ca đối soát đầu tiên.
 
 - [ ] Thêm adapter nguồn thật theo stack đã chọn; credentials chỉ ở phía server/cấu hình môi trường phù hợp.
 - [ ] Đọc Gold/view đúng contract, query có giới hạn ngày, sort và pagination.
