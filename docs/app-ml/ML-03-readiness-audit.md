@@ -27,6 +27,18 @@ python3 -m ml.cli audit --config ml/configs/smoke.json \
 
 **Exit code 2 là dự kiến khi readiness còn blocked**, kể cả các kiểm tra dữ liệu đã chạy thành công. Output vẫn có báo cáo để xem lý do. Các lệnh hiện tại không thể tự xác nhận external evidence; `ready_for_ml03` luôn false trong phiên bản chuẩn bị này. Đừng dùng exit 2 để kết luận audit bị crash hoặc tự giảm purge để chuyển thành pass.
 
+Với snapshot backfill GH Archive, dùng `--source snapshot --snapshot-dir <thư-mục-snapshot>` cùng config và output. Audit kiểm tra lịch sử theo thời điểm sự kiện và giữ trạng thái overall `blocked` cho tới khi có bằng chứng về Gold và thời điểm dữ liệu đã sẵn sàng. Snapshot có nguồn riêng trong report để phân biệt với fixture tổng hợp.
+
+Trong khi backfill đang chạy, có thể tạo features ngoài mẫu từ snapshot đã xuất và kiểm tra điều kiện train bằng cùng cấu hình thời gian.
+
+```powershell
+python -m ml.cli build --snapshot-dir <snapshot> --config ml/configs/smoke.json --features-only --output ml/runs/ml03-features
+python -m ml.cli build --snapshot-dir <snapshot> --config ml/configs/smoke.json --output ml/runs/ml03-dataset
+python -m ml.cli train --dataset ml/runs/ml03-dataset --config ml/configs/smoke.json --output ml/runs/ml03-train
+```
+
+Với snapshot, train ghi báo cáo `blocked` nếu các kiểm tra lịch và số anchor chưa đạt. Khi qua các kiểm tra đó, model và test metrics vẫn mang nhãn đánh giá hồi cứu đến khi Gold và lịch sử publication được xác minh.
+
 Chuẩn bị chọn nguồn thật:
 
 ```bash
