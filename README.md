@@ -201,6 +201,21 @@ LIMIT 10;
 
 Để phục vụ bài toán dự báo số lượng `star_events` trong 30 ngày tiếp theo (**ML-01 / ML-02 / ML-03**) trên máy cá nhân mà không cần tải hàng trăm GB raw GH Archive, dự án cung cấp chế độ trích xuất giới hạn dung lượng (~20 MB ổ cứng) kết hợp bộ tạo dữ liệu chuẩn **Contract v1**.
 
+### Dữ liệu backfill ML-03 cho DE
+
+Bộ dữ liệu backfill GH Archive được cập nhật trên nhánh `feature/ml-gharchive-backfill-checkpoints`. Trang chỉ mục luôn trỏ tới bản xuất mới nhất. [Mở chỉ mục dữ liệu ML-03](https://github.com/imnosuke/github_project/blob/feature/ml-gharchive-backfill-checkpoints/ml/datasets/README.md)
+
+- Để kiểm tra hoặc audit ML-03, mở `snapshot/` và đọc `manifest.json` để biết phạm vi ngày UTC, số repo và checksum. `repository_daily_metrics.parquet` chứa metrics theo repo/ngày, còn `daily_data_status.parquet` ghi độ phủ.
+- Để tiếp tục crawl trên máy DE, chuyển `days/` và `scope.json` vào thư mục dữ liệu của collector. Giữ nguyên các cặp Parquet và checkpoint checksum theo giờ cùng danh sách GitHub repo ID.
+- Bản bàn giao ngày 15/05/2025 UTC bao phủ 135 ngày đủ dữ liệu, từ 01/01/2025, cho 20 repo. Đây là dữ liệu hồi cứu trong đợt backfill 320 ngày. ML-03 vẫn cần đạt điều kiện audit trước khi train. [Bản bàn giao 135 ngày](https://github.com/imnosuke/github_project/tree/feature/ml-gharchive-backfill-checkpoints/ml/datasets/gharchive-2025-05-15)
+
+Nếu đang ở một nhánh khác, có thể tải nhánh dữ liệu vào một thư mục riêng bằng Git.
+
+```bash
+git fetch origin feature/ml-gharchive-backfill-checkpoints
+git worktree add --detach ../github-project-data FETCH_HEAD
+```
+
 ### 7.1. Tải dữ liệu thật từ GH Archive về ổ cứng (~18.4 MB Parquet)
 Sử dụng tham số `--max-records 22000` và `--local-only` để tải, giải nén, chuyển sang Parquet nén Snappy và tự động xóa file `.json.gz` tạm:
 
