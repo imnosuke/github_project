@@ -6,6 +6,7 @@ Airflow DAG: Pipeline Medallion (Bronze -> Silver -> Gold) cho dữ liệu GH Ar
 4. Chạy dbt (`dbt run` & `dbt test`) để biến đổi dữ liệu sang tầng Silver và Gold trên ClickHouse
 """
 from datetime import datetime, timedelta
+import json
 import logging
 import os
 import subprocess
@@ -21,11 +22,9 @@ if SCRIPTS_DIR not in sys.path:
 
 from gharchive_extractor import (
     DEFAULT_TRACKED_REPOS,
-    download_gharchive_file,
-    convert_json_gz_to_parquet,
     iter_date_hours,
-    upload_to_minio,
-    cleanup_local_files,
+    stream_https_raw_gz_to_minio,
+    stream_https_to_minio_parquet,
 )
 from clickhouse_loader import load_minio_parquet_to_bronze
 
@@ -96,6 +95,11 @@ DBT_PROJECT_DIR = "/opt/airflow/dbt_gharchive"
             type="boolean",
             description="Có lưu thêm bản gốc .json.gz vào MinIO hay không?",
         ),
+        "dbt_full_refresh": Param(
+            default=False,
+            type="boolean",
+            description="Bật True ở lần init đầu tiên (hoặc khi cần rebuild toàn bộ lịch sử); để False ở các ngày sau để chỉ transform incremental đúng ngày mới nạp.",
+        ),
     },
 )
 def gharchive_medallion_pipeline():
@@ -153,104 +157,56 @@ def gharchive_medallion_pipeline():
             "upload_raw_gz": upload_raw_gz,
         }
 
-    @task(task_id="download_from_gharchive")
-    def task_download(target: dict) -> dict:
-        """Tải một hoặc nhiều file {YYYY-MM-DD}-{H}.json.gz từ https://data.gharchive.org/"""
+    @task(task_id="stream_gharchive_to_minio_s3")
+    def task_stream_to_minio(target: dict) -> dict:
+        """
+        Stream trực tiếp từ HTTPS GH Archive, giải nén Gzip và đóng gói Parquet
+        ngay trên RAM (io.BytesIO) rồi đẩy thẳng lên S3 MinIO (0 byte ghi xuống ổ cứng).
+        """
+        bucket_name = os.getenv("MINIO_BUCKET_NAME", "gharchive")
         targets = target.get("targets") or [{"date_str": target["date_str"], "hour": target["hour"]}]
-        downloaded_items = []
+        tracked_repos = list(DEFAULT_TRACKED_REPOS) if target.get("filter_default_repos") else None
+        max_records = target.get("max_records_per_file")
 
+        uploaded_items = []
         for item in targets:
             try:
-                local_gz_path = download_gharchive_file(
+                item_uris = {}
+                if target.get("upload_raw_gz"):
+                    raw_uri = stream_https_raw_gz_to_minio(
+                        date_str=item["date_str"],
+                        hour=item["hour"],
+                        bucket_name=bucket_name,
+                        layer_prefix="bronze/events_raw",
+                    )
+                    item_uris["bronze_raw_uri"] = raw_uri
+
+                res = stream_https_to_minio_parquet(
                     date_str=item["date_str"],
                     hour=item["hour"],
-                    output_dir="/opt/airflow/data/raw",
+                    bucket_name=bucket_name,
+                    layer_prefix="bronze/events_parquet",
+                    tracked_repos=tracked_repos,
+                    max_records_per_file=max_records,
                 )
-                downloaded_items.append({
+                item_uris["bronze_parquet_uri"] = res["s3_uri"]
+                item_uris["records"] = res["records"]
+                item_uris["size_mb"] = res["size_mb"]
+                uploaded_items.append({
                     "date_str": item["date_str"],
                     "hour": item["hour"],
-                    "raw_gz_path": local_gz_path,
+                    **item_uris,
                 })
             except FileNotFoundError as exc:
                 logger.warning(f"Bỏ qua file không tồn tại trên GH Archive: {exc}")
                 if len(targets) == 1:
                     raise
 
-        if not downloaded_items:
-            raise RuntimeError("Không tải được bất kỳ file GH Archive nào trong khoảng yêu cầu.")
+        if not uploaded_items:
+            raise RuntimeError("Không stream được bất kỳ file GH Archive nào lên MinIO trong khoảng yêu cầu.")
 
         return {
             **target,
-            "raw_gz_path": downloaded_items[0]["raw_gz_path"],
-            "items": downloaded_items,
-        }
-
-    @task(task_id="convert_to_parquet")
-    def task_convert_parquet(meta: dict) -> dict:
-        """Giải nén các file .json.gz và chuẩn hóa sang định dạng Parquet (nén Snappy)."""
-        items = meta.get("items") or [
-            {"date_str": meta["date_str"], "hour": meta["hour"], "raw_gz_path": meta["raw_gz_path"]}
-        ]
-        tracked_repos = list(DEFAULT_TRACKED_REPOS) if meta.get("filter_default_repos") else None
-        max_records = meta.get("max_records_per_file")
-
-        converted_items = []
-        for item in items:
-            parquet_path = convert_json_gz_to_parquet(
-                raw_gz_path=item["raw_gz_path"],
-                output_dir="/opt/airflow/data/parquet",
-                tracked_repos=tracked_repos,
-                max_records_per_file=max_records,
-            )
-            converted_items.append({
-                **item,
-                "parquet_path": parquet_path,
-            })
-
-        return {
-            **meta,
-            "parquet_path": converted_items[0]["parquet_path"],
-            "items": converted_items,
-        }
-
-    @task(task_id="upload_to_minio_s3")
-    def task_upload_minio(meta: dict) -> dict:
-        """Đẩy các file Parquet lên S3 MinIO theo phân vùng year/month/day."""
-        bucket_name = os.getenv("MINIO_BUCKET_NAME", "gharchive")
-        items = meta.get("items") or [
-            {
-                "date_str": meta["date_str"],
-                "hour": meta["hour"],
-                "raw_gz_path": meta.get("raw_gz_path"),
-                "parquet_path": meta["parquet_path"],
-            }
-        ]
-        uploaded_items = []
-
-        for item in items:
-            item_uris = {}
-            if meta.get("upload_raw_gz") and item.get("raw_gz_path"):
-                raw_uri = upload_to_minio(
-                    local_file_path=item["raw_gz_path"],
-                    date_str=item["date_str"],
-                    hour=item["hour"],
-                    bucket_name=bucket_name,
-                    layer_prefix="bronze/events_raw",
-                )
-                item_uris["bronze_raw_uri"] = raw_uri
-
-            parquet_uri = upload_to_minio(
-                local_file_path=item["parquet_path"],
-                date_str=item["date_str"],
-                hour=item["hour"],
-                bucket_name=bucket_name,
-                layer_prefix="bronze/events_parquet",
-            )
-            item_uris["bronze_parquet_uri"] = parquet_uri
-            uploaded_items.append({**item, **item_uris})
-
-        return {
-            **meta,
             "bronze_parquet_uri": uploaded_items[-1]["bronze_parquet_uri"],
             "items": uploaded_items,
         }
@@ -277,13 +233,28 @@ def gharchive_medallion_pipeline():
         }
 
     @task(task_id="dbt_transform_silver_gold")
-    def task_dbt_transform(meta: dict) -> dict:
-        """Chạy `dbt run` và `dbt test` để cập nhật tầng Silver và Gold trên ClickHouse."""
+    def task_dbt_transform(meta: dict, **context) -> dict:
+        """
+        Chạy `dbt run` và `dbt test` để cập nhật tầng Silver và Gold trên ClickHouse.
+        - Lần init đầu tiên (chưa có bảng hoặc bật `dbt_full_refresh=True`): transform toàn bộ dữ liệu.
+        - Các lần chạy sau: chỉ transform incremental đúng các ngày vừa nạp (`target_dates`), cực nhanh và không tốn RAM.
+        """
         dbt_bin = "/opt/airflow/dbt_venv/bin/dbt"
         if not os.path.exists(dbt_bin):
             dbt_bin = "dbt"
 
-        for subcmd in (["run"], ["test"]):
+        params = context.get("params") or {}
+        full_refresh = bool(params.get("dbt_full_refresh", False))
+
+        items = meta.get("items") or [{"date_str": meta["date_str"], "hour": meta["hour"]}]
+        target_dates_str = ",".join(sorted({item["date_str"] for item in items if item.get("date_str")}))
+        dbt_vars = json.dumps({"target_dates": target_dates_str})
+
+        run_args = ["run"]
+        if full_refresh:
+            run_args.append("--full-refresh")
+
+        for subcmd in (run_args, ["test"]):
             cmd = [
                 dbt_bin,
                 *subcmd,
@@ -291,6 +262,8 @@ def gharchive_medallion_pipeline():
                 DBT_PROJECT_DIR,
                 "--profiles-dir",
                 DBT_PROJECT_DIR,
+                "--vars",
+                dbt_vars,
             ]
             logger.info(f"Đang thực thi lệnh dbt: {' '.join(cmd)}")
             result = subprocess.run(
@@ -307,26 +280,11 @@ def gharchive_medallion_pipeline():
 
         return meta
 
-    @task(task_id="cleanup_temp_files", trigger_rule="all_done")
-    def task_cleanup(meta: dict) -> str:
-        """Xóa các file tạm (.json.gz và .parquet) trên container sau khi pipeline chạy xong."""
-        if not meta:
-            return "Cleaned up"
-        paths_to_clean = [meta.get("raw_gz_path"), meta.get("parquet_path")]
-        for item in meta.get("items") or []:
-            paths_to_clean.append(item.get("raw_gz_path"))
-            paths_to_clean.append(item.get("parquet_path"))
-        cleanup_local_files(*paths_to_clean)
-        return meta.get("bronze_parquet_uri", "Cleaned up")
-
-    # Luồng thực thi (Pipeline Dependency)
+    # Luồng thực thi (Pipeline Dependency): Direct HTTPS -> RAM Parquet -> MinIO S3 -> ClickHouse
     target_info = resolve_target_datetime()
-    downloaded_meta = task_download(target_info)
-    parquet_meta = task_convert_parquet(downloaded_meta)
-    uploaded_meta = task_upload_minio(parquet_meta)
+    uploaded_meta = task_stream_to_minio(target_info)
     bronze_meta = task_load_clickhouse_bronze(uploaded_meta)
-    dbt_meta = task_dbt_transform(bronze_meta)
-    task_cleanup(dbt_meta)
+    task_dbt_transform(bronze_meta)
 
 
 gharchive_medallion_pipeline()

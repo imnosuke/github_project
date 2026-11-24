@@ -1,6 +1,5 @@
-# Airflow logs & temporary data
+# Airflow logs
 airflow/logs/
-airflow/data/
 
 # dbt build artifacts & logs
 dbt_gharchive/target/

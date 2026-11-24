@@ -1,15 +1,18 @@
 """
-Script xử lý tải dữ liệu GH Archive (https://data.gharchive.org/),
-giải nén, chuẩn hóa sang định dạng Parquet và đẩy lên S3 MinIO.
+Script xử lý stream dữ liệu trực tiếp từ GH Archive (https://data.gharchive.org/)
+lên S3 MinIO hoàn toàn trên RAM (io.BytesIO) mà không ghi file tạm xuống ổ cứng:
+- Giải nén luồng Gzip on-the-fly từ HTTPS response
+- Chuẩn hóa schema và đóng gói Snappy Parquet trên RAM
+- Đẩy thẳng buffer Parquet (và tùy chọn bản gốc .json.gz) lên S3 MinIO theo Hive Partitioning
 """
 import argparse
+from datetime import date, datetime, timedelta, timezone
 import gzip
+import io
 import json
 import logging
 import os
-from datetime import date, timedelta
-from pathlib import Path
-from typing import Dict, Any, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import boto3
 from botocore.client import Config
@@ -79,6 +82,20 @@ DEFAULT_TRACKED_REPOS: Tuple[str, ...] = (
     "golang/go",
 )
 
+PARQUET_SCHEMA = pa.schema([
+    ("event_id", pa.string()),
+    ("event_type", pa.string()),
+    ("public", pa.bool_()),
+    ("created_at", pa.string()),
+    ("actor_id", pa.int64()),
+    ("actor_login", pa.string()),
+    ("repo_id", pa.int64()),
+    ("repo_name", pa.string()),
+    ("org_id", pa.int64()),
+    ("org_login", pa.string()),
+    ("payload_json", pa.string()),
+])
+
 
 def parse_repo_filter(
     tracked_repos: Optional[Iterable[str]] = None,
@@ -112,8 +129,8 @@ def iter_date_hours(
 ) -> List[Tuple[str, int]]:
     """
     Sinh danh sách các cặp (date_str, hour) theo khoảng ngày và khung giờ.
-    - hours_step=1: lấy đủ 24 giờ/ngày (chuẩn completeness 24/24).
-    - hours_step>1: lấy mẫu cách giờ (ví dụ step=4 -> 6 giờ/ngày) để chạy nhanh trên máy cá nhân.
+    Nếu ngày cần lấy trùng với ngày hiện tại theo giờ UTC, tự động giới hạn giờ tối đa
+    đến khung giờ UTC đã hoàn tất gần nhất (now_utc.hour - 1) để tránh lỗi HTTP 404 ở các giờ tương lai.
     """
     s_date = date.fromisoformat(start_date.strip())
     e_date = date.fromisoformat((end_date or start_date).strip())
@@ -126,11 +143,16 @@ def iter_date_hours(
         raise ValueError(f"start_hour ({s_hour}) không được lớn hơn end_hour ({e_hour})")
     step = max(1, int(hours_step))
 
+    now_utc = datetime.now(timezone.utc)
+    today_utc = now_utc.date()
+    latest_completed_utc_hour = max(0, now_utc.hour - 1)
+
     targets: List[Tuple[str, int]] = []
     cur = s_date
     while cur <= e_date:
         d_str = cur.isoformat()
-        for h in range(s_hour, e_hour + 1, step):
+        effective_end_hour = min(e_hour, latest_completed_utc_hour) if cur == today_utc and s_hour != e_hour else e_hour
+        for h in range(s_hour, effective_end_hour + 1, step):
             targets.append((d_str, h))
         cur += timedelta(days=1)
     return targets
@@ -139,156 +161,9 @@ def iter_date_hours(
 def build_gharchive_filename(date_str: str, hour: int) -> str:
     """
     Tạo tên file chuẩn của GH Archive: {YYYY-MM-DD}-{H}.json.gz
-    Lưu ý: hour từ 0..23 KHÔNG có số 0 đứng trước (ví dụ: 2024-01-01-0.json.gz, 2024-01-01-15.json.gz)
+    Lưu ý: hour từ 0..23 KHÔNG có số 0 đứng trước (ví dụ: 2025-01-01-0.json.gz, 2025-01-01-15.json.gz)
     """
     return f"{date_str}-{int(hour)}.json.gz"
-
-
-def download_gharchive_file(date_str: str, hour: int, output_dir: str = "/opt/airflow/data/raw") -> str:
-    """
-    Tải file .json.gz từ GH Archive về thư mục local tạm thời.
-    """
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    filename = build_gharchive_filename(date_str, hour)
-    url = f"{GHARCHIVE_BASE_URL}/{filename}"
-    local_path = os.path.join(output_dir, filename)
-
-    headers = {
-        "User-Agent": "Airflow-GHArchive-MinIO-Pipeline/1.0"
-    }
-
-    logger.info(f"Đang tải dữ liệu từ: {url}")
-    with requests.get(url, headers=headers, stream=True, timeout=120) as response:
-        if response.status_code == 404:
-            raise FileNotFoundError(f"Không tìm thấy dữ liệu GH Archive trên server cho thời điểm {filename} (HTTP 404).")
-        response.raise_for_status()
-
-        with open(local_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
-                if chunk:
-                    f.write(chunk)
-
-    file_size_mb = os.path.getsize(local_path) / (1024 * 1024)
-    logger.info(f"Tải thành công: {local_path} ({file_size_mb:.2f} MB)")
-    return local_path
-
-
-def convert_json_gz_to_parquet(
-    raw_gz_path: str,
-    output_dir: str = "/opt/airflow/data/parquet",
-    batch_size: int = 50000,
-    tracked_repos: Optional[Iterable[str]] = None,
-    max_records_per_file: Optional[int] = None,
-) -> str:
-    """
-    Giải nén file .json.gz của GH Archive và chuyển đổi sang định dạng Parquet (nén Snappy).
-    Tách các trường quan trọng (id, type, actor, repo, org, created_at, public) thành cột chuẩn,
-    và giữ nguyên trường `payload` (vốn có cấu trúc biến động theo từng loại sự kiện) ở dạng JSON string
-    để tránh xung đột schema và giúp truy vấn cực nhanh trên Trino/Spark/DuckDB.
-
-    Hỗ trợ lọc theo `tracked_repos` hoặc giới hạn `max_records_per_file` để tiết kiệm RAM/ổ cứng trên máy cá nhân.
-    """
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    base_name = os.path.basename(raw_gz_path).replace(".json.gz", ".parquet")
-    parquet_path = os.path.join(output_dir, base_name)
-
-    repo_filter = parse_repo_filter(tracked_repos)
-    if max_records_per_file is None:
-        env_max = os.getenv("GHARCHIVE_MAX_RECORDS_PER_FILE", "").strip()
-        if env_max.isdigit() and int(env_max) > 0:
-            max_records_per_file = int(env_max)
-
-    logger.info(
-        f"Đang giải nén và chuyển đổi {raw_gz_path} -> {parquet_path} "
-        f"(repo_filter={len(repo_filter) if repo_filter else 'ALL'}, "
-        f"max_records={max_records_per_file or 'UNLIMITED'}) ..."
-    )
-
-    schema = pa.schema([
-        ("event_id", pa.string()),
-        ("event_type", pa.string()),
-        ("public", pa.bool_()),
-        ("created_at", pa.string()),
-        ("actor_id", pa.int64()),
-        ("actor_login", pa.string()),
-        ("repo_id", pa.int64()),
-        ("repo_name", pa.string()),
-        ("org_id", pa.int64()),
-        ("org_login", pa.string()),
-        ("payload_json", pa.string()),
-    ])
-
-    writer = pq.ParquetWriter(parquet_path, schema, compression="snappy")
-    total_records = 0
-    scanned_records = 0
-    batch_rows = []
-
-    def _flush_batch(rows):
-        if not rows:
-            return
-        table = pa.Table.from_pylist(rows, schema=schema)
-        writer.write_table(table)
-
-    try:
-        with gzip.open(raw_gz_path, "rt", encoding="utf-8", errors="replace") as gz_file:
-            for line in gz_file:
-                line = line.strip()
-                if not line:
-                    continue
-                scanned_records += 1
-                try:
-                    record: Dict[str, Any] = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-
-                repo = record.get("repo") or {}
-                repo_name = repo.get("name")
-                if repo_filter is not None:
-                    if not repo_name or str(repo_name).lower() not in repo_filter:
-                        continue
-
-                actor = record.get("actor") or {}
-                org = record.get("org") or {}
-                payload = record.get("payload") or {}
-
-                batch_rows.append({
-                    "event_id": str(record.get("id", "")),
-                    "event_type": record.get("type"),
-                    "public": bool(record.get("public", True)),
-                    "created_at": record.get("created_at"),
-                    "actor_id": actor.get("id"),
-                    "actor_login": actor.get("login"),
-                    "repo_id": repo.get("id"),
-                    "repo_name": repo_name,
-                    "org_id": org.get("id"),
-                    "org_login": org.get("login"),
-                    "payload_json": json.dumps(payload, ensure_ascii=False),
-                })
-
-                total_records += 1
-                if len(batch_rows) >= batch_size:
-                    _flush_batch(batch_rows)
-                    batch_rows.clear()
-
-                if max_records_per_file and total_records >= max_records_per_file:
-                    logger.info(f"Đã đạt giới hạn {max_records_per_file:,} events/file, dừng đọc sớm.")
-                    break
-
-        if batch_rows:
-            _flush_batch(batch_rows)
-            batch_rows.clear()
-        elif total_records == 0:
-            # Đảm bảo file Parquet hợp lệ với 0 dòng nếu không có sự kiện khớp bộ lọc
-            writer.write_table(pa.Table.from_pylist([], schema=schema))
-    finally:
-        writer.close()
-
-    parquet_size_mb = os.path.getsize(parquet_path) / (1024 * 1024)
-    logger.info(
-        f"Hoàn tất chuyển đổi Parquet: {parquet_path} | "
-        f"Giữ lại: {total_records:,}/{scanned_records:,} events | Dung lượng: {parquet_size_mb:.2f} MB"
-    )
-    return parquet_path
 
 
 def get_s3_client():
@@ -316,59 +191,190 @@ def ensure_bucket_exists(s3_client, bucket_name: str):
         s3_client.create_bucket(Bucket=bucket_name)
 
 
-def upload_to_minio(
-    local_file_path: str,
+def stream_https_raw_gz_to_minio(
     date_str: str,
     hour: int,
     bucket_name: str = None,
-    layer_prefix: str = "bronze/events_parquet",
+    layer_prefix: str = "bronze/events_raw",
 ) -> str:
     """
-    Đẩy file Parquet (hoặc Raw) lên S3 MinIO theo cấu trúc Hive Partitioning:
-    s3://<bucket>/<layer_prefix>/year=YYYY/month=MM/day=DD/YYYY-MM-DD-H.parquet
+    Stream trực tiếp file gốc .json.gz từ HTTPS GH Archive thẳng lên S3 MinIO
+    mà không ghi xuống ổ cứng local. Xóa object cũ trước khi ghi đè để đảm bảo idempotency.
     """
     bucket = bucket_name or os.getenv("MINIO_BUCKET_NAME", "gharchive")
     s3_client = get_s3_client()
     ensure_bucket_exists(s3_client, bucket)
 
+    filename = build_gharchive_filename(date_str, hour)
     year, month, day = date_str.split("-")
-    filename = os.path.basename(local_file_path)
     s3_key = f"{layer_prefix}/year={year}/month={month}/day={day}/{filename}"
+    url = f"{GHARCHIVE_BASE_URL}/{filename}"
 
-    logger.info(f"Đang upload {local_file_path} lên s3://{bucket}/{s3_key} ...")
-    s3_client.upload_file(local_file_path, bucket, s3_key)
+    headers = {"User-Agent": "Airflow-GHArchive-MinIO-Pipeline/1.0"}
+    logger.info(f"Đang stream trực tiếp bản gốc {url} -> s3://{bucket}/{s3_key} ...")
+
+    with requests.get(url, headers=headers, stream=True, timeout=120) as response:
+        if response.status_code == 404:
+            raise FileNotFoundError(
+                f"Không tìm thấy dữ liệu GH Archive trên server cho thời điểm {filename} (HTTP 404)."
+            )
+        response.raise_for_status()
+        response.raw.decode_content = False
+        s3_client.delete_object(Bucket=bucket, Key=s3_key)
+        s3_client.upload_fileobj(response.raw, bucket, s3_key)
 
     s3_uri = f"s3://{bucket}/{s3_key}"
-    logger.info(f"Upload hoàn tất: {s3_uri}")
+    logger.info(f"Stream raw .json.gz lên MinIO hoàn tất: {s3_uri}")
     return s3_uri
 
 
-def cleanup_local_files(*file_paths: str):
-    """Dọn dẹp các file tạm trên ổ cứng sau khi đã đẩy lên MinIO."""
-    for path in file_paths:
-        if path and os.path.exists(path):
-            os.remove(path)
-            logger.info(f"Đã xóa file tạm: {path}")
+def stream_https_to_minio_parquet(
+    date_str: str,
+    hour: int,
+    bucket_name: str = None,
+    layer_prefix: str = "bronze/events_parquet",
+    batch_size: int = 50000,
+    tracked_repos: Optional[Iterable[str]] = None,
+    max_records_per_file: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Đọc stream trực tiếp từ HTTPS GH Archive, giải nén Gzip và đóng gói Parquet
+    ngay trên RAM (io.BytesIO), xóa object cũ trên MinIO (nếu có) và đẩy thẳng lên S3 MinIO
+    (0 byte ghi xuống ổ cứng).
+    """
+    bucket = bucket_name or os.getenv("MINIO_BUCKET_NAME", "gharchive")
+    s3_client = get_s3_client()
+    ensure_bucket_exists(s3_client, bucket)
+
+    filename = build_gharchive_filename(date_str, hour)
+    parquet_filename = filename.replace(".json.gz", ".parquet")
+    year, month, day = date_str.split("-")
+    s3_key = f"{layer_prefix}/year={year}/month={month}/day={day}/{parquet_filename}"
+    url = f"{GHARCHIVE_BASE_URL}/{filename}"
+
+    repo_filter = parse_repo_filter(tracked_repos)
+    if max_records_per_file is None:
+        env_max = os.getenv("GHARCHIVE_MAX_RECORDS_PER_FILE", "").strip()
+        if env_max.isdigit() and int(env_max) > 0:
+            max_records_per_file = int(env_max)
+
+    headers = {"User-Agent": "Airflow-GHArchive-MinIO-Pipeline/1.0"}
+    logger.info(
+        f"Đang stream HTTPS -> RAM Parquet -> MinIO: {url} -> s3://{bucket}/{s3_key} "
+        f"(repo_filter={len(repo_filter) if repo_filter else 'ALL'}, "
+        f"max_records={max_records_per_file or 'UNLIMITED'}) ..."
+    )
+
+    parquet_buffer = io.BytesIO()
+    writer = pq.ParquetWriter(parquet_buffer, PARQUET_SCHEMA, compression="snappy")
+    total_records = 0
+    scanned_records = 0
+    batch_rows = []
+
+    def _flush_batch(rows):
+        if not rows:
+            return
+        table = pa.Table.from_pylist(rows, schema=PARQUET_SCHEMA)
+        writer.write_table(table)
+
+    try:
+        with requests.get(url, headers=headers, stream=True, timeout=120) as response:
+            if response.status_code == 404:
+                raise FileNotFoundError(
+                    f"Không tìm thấy dữ liệu GH Archive trên server cho thời điểm {filename} (HTTP 404)."
+                )
+            response.raise_for_status()
+            response.raw.decode_content = False
+
+            with gzip.GzipFile(fileobj=response.raw, mode="rb") as gz_stream:
+                for raw_line in gz_stream:
+                    line = raw_line.decode("utf-8", errors="replace").strip()
+                    if not line:
+                        continue
+                    scanned_records += 1
+                    try:
+                        record: Dict[str, Any] = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+
+                    repo = record.get("repo") or {}
+                    repo_name = repo.get("name")
+                    if repo_filter is not None:
+                        if not repo_name or str(repo_name).lower() not in repo_filter:
+                            continue
+
+                    actor = record.get("actor") or {}
+                    org = record.get("org") or {}
+                    payload = record.get("payload") or {}
+
+                    batch_rows.append({
+                        "event_id": str(record.get("id", "")),
+                        "event_type": record.get("type"),
+                        "public": bool(record.get("public", True)),
+                        "created_at": record.get("created_at"),
+                        "actor_id": actor.get("id"),
+                        "actor_login": actor.get("login"),
+                        "repo_id": repo.get("id"),
+                        "repo_name": repo_name,
+                        "org_id": org.get("id"),
+                        "org_login": org.get("login"),
+                        "payload_json": json.dumps(payload, ensure_ascii=False),
+                    })
+
+                    total_records += 1
+                    if len(batch_rows) >= batch_size:
+                        _flush_batch(batch_rows)
+                        batch_rows.clear()
+
+                    if max_records_per_file and total_records >= max_records_per_file:
+                        logger.info(
+                            f"Đã đạt giới hạn {max_records_per_file:,} events cho {filename}, đóng stream HTTP sớm."
+                        )
+                        break
+
+        if batch_rows:
+            _flush_batch(batch_rows)
+            batch_rows.clear()
+        elif total_records == 0:
+            writer.write_table(pa.Table.from_pylist([], schema=PARQUET_SCHEMA))
+    finally:
+        writer.close()
+
+    parquet_buffer.seek(0)
+    size_mb = parquet_buffer.getbuffer().nbytes / (1024 * 1024)
+    logger.info(
+        f"Xóa object cũ (nếu có) và đẩy thẳng buffer Parquet ({size_mb:.2f} MB | {total_records:,}/{scanned_records:,} events) "
+        f"lên s3://{bucket}/{s3_key} ..."
+    )
+    s3_client.delete_object(Bucket=bucket, Key=s3_key)
+    s3_client.upload_fileobj(parquet_buffer, bucket, s3_key)
+    s3_uri = f"s3://{bucket}/{s3_key}"
+    logger.info(f"Stream trực tiếp lên MinIO hoàn tất: {s3_uri}")
+    return {
+        "s3_uri": s3_uri,
+        "s3_key": s3_key,
+        "records": total_records,
+        "size_mb": round(size_mb, 2),
+    }
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Chạy độc lập script tải GH Archive -> Parquet -> MinIO (hỗ trợ khoảng ngày)")
-    parser.add_argument("--date", help="Ngày bắt đầu cần tải (YYYY-MM-DD), ví dụ: 2025-01-15")
+    parser = argparse.ArgumentParser(
+        description="Stream trực tiếp dữ liệu GH Archive từ HTTPS -> RAM Parquet -> S3 MinIO (0 byte ghi xuống ổ cứng)"
+    )
+    parser.add_argument("--date", required=True, help="Ngày bắt đầu cần tải (YYYY-MM-DD), ví dụ: 2025-01-01")
     parser.add_argument("--end-date", help="Ngày kết thúc (YYYY-MM-DD, tùy chọn, mặc định bằng --date)")
     parser.add_argument("--hour", type=int, help="Giờ đơn lẻ cần tải (0-23). Nếu bỏ trống sẽ dùng --start-hour đến --end-hour")
     parser.add_argument("--start-hour", type=int, default=0, help="Giờ bắt đầu trong ngày (0-23, mặc định: 0)")
     parser.add_argument("--end-hour", type=int, default=23, help="Giờ kết thúc trong ngày (0-23, mặc định: 23)")
-    parser.add_argument("--hours-step", type=int, default=1, help="Bước nhảy giờ (mặc định 1 = cả 24h; đặt 4 hoặc 6 để lấy mẫu nhẹ cho máy cá nhân)")
-    parser.add_argument("--filter-default-repos", action="store_true", help="Chỉ giữ sự kiện của 50 repo phổ biến mặc định để nhẹ máy")
+    parser.add_argument("--hours-step", type=int, default=1, help="Bước nhảy giờ (mặc định 1 = cả 24h; đặt 6 để lấy mẫu 4 khung giờ/ngày)")
+    parser.add_argument("--filter-default-repos", action="store_true", help="Chỉ giữ sự kiện của 50 repo phổ biến mặc định")
     parser.add_argument("--repos", help="Danh sách owner/repo cách nhau dấu phẩy để lọc")
     parser.add_argument("--max-records", type=int, default=None, help="Giới hạn số dòng tối đa mỗi file Parquet")
-    parser.add_argument("--keep-raw", action="store_true", help="Upload thêm cả file gốc .json.gz lên phân vùng bronze/")
-    parser.add_argument("--local-only", action="store_true", help="Chỉ tải và chuyển sang Parquet ở local, không đẩy lên MinIO")
-    parser.add_argument("--output-dir", default="/opt/airflow/data", help="Thư mục gốc lưu dữ liệu tạm (raw & parquet)")
+    parser.add_argument("--target-total-mb", type=float, default=None, help="Tổng dung lượng Parquet mục tiêu trên MinIO (MB, ví dụ: 500)")
+    parser.add_argument("--skip-existing", action="store_true", help="Bỏ qua nếu file Parquet của khung giờ đó đã tồn tại trên MinIO")
+    parser.add_argument("--keep-raw", action="store_true", help="Stream thêm cả file gốc .json.gz lên phân vùng bronze/events_raw trên MinIO")
     args = parser.parse_args()
-
-    if not args.date:
-        parser.error("Cần truyền --date YYYY-MM-DD")
 
     s_hour = args.hour if args.hour is not None else args.start_hour
     e_hour = args.hour if args.hour is not None else args.end_hour
@@ -386,30 +392,56 @@ if __name__ == "__main__":
     elif args.filter_default_repos:
         custom_repos = list(DEFAULT_TRACKED_REPOS)
 
-    raw_dir = os.path.join(args.output_dir, "raw")
-    parquet_dir = os.path.join(args.output_dir, "parquet")
+    bucket_name = os.getenv("MINIO_BUCKET_NAME", "gharchive")
+    s3_client = get_s3_client()
+    ensure_bucket_exists(s3_client, bucket_name)
 
-    logger.info(f"Bắt đầu xử lý {len(targets)} khung giờ từ {targets[0]} đến {targets[-1]}...")
-    for d_str, hr in targets:
-        raw_file = None
-        parquet_file = None
+    def _current_minio_total_mb() -> float:
+        objs = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="bronze/events_parquet/").get("Contents", [])
+        return sum(o["Size"] for o in objs) / (1024 * 1024)
+
+    logger.info(
+        f"[DIRECT HTTPS -> S3] Bắt đầu stream tối đa {len(targets)} khung giờ thẳng lên MinIO bucket '{bucket_name}'..."
+    )
+    for idx, (d_str, hr) in enumerate(targets, 1):
+        if args.target_total_mb is not None:
+            cur_mb = _current_minio_total_mb()
+            if cur_mb >= args.target_total_mb:
+                logger.info(
+                    f"Đã đạt tổng dung lượng trên MinIO: {cur_mb:.2f} MB >= {args.target_total_mb:.2f} MB. Dừng tải thêm."
+                )
+                break
+
+        year, month, day = d_str.split("-")
+        s3_key = f"bronze/events_parquet/year={year}/month={month}/day={day}/{d_str}-{int(hr)}.parquet"
+        if args.skip_existing:
+            try:
+                head = s3_client.head_object(Bucket=bucket_name, Key=s3_key)
+                if head.get("ContentLength", 0) > 1024:
+                    logger.info(
+                        f"[{idx}/{len(targets)}] Bỏ qua s3://{bucket_name}/{s3_key} vì đã tồn tại trên MinIO ({head['ContentLength']/(1024*1024):.2f} MB)."
+                    )
+                    continue
+            except Exception:
+                pass
+
         try:
-            raw_file = download_gharchive_file(d_str, hr, output_dir=raw_dir)
-            if args.keep_raw and not args.local_only:
-                upload_to_minio(raw_file, d_str, hr, layer_prefix="bronze/events_raw")
+            if args.keep_raw:
+                stream_https_raw_gz_to_minio(d_str, hr, bucket_name=bucket_name)
 
-            parquet_file = convert_json_gz_to_parquet(
-                raw_file,
-                output_dir=parquet_dir,
+            stream_https_to_minio_parquet(
+                date_str=d_str,
+                hour=hr,
+                bucket_name=bucket_name,
+                layer_prefix="bronze/events_parquet",
                 tracked_repos=custom_repos,
                 max_records_per_file=args.max_records,
             )
-            if not args.local_only:
-                upload_to_minio(parquet_file, d_str, hr, layer_prefix="bronze/events_parquet")
         except FileNotFoundError as e:
             logger.warning(f"Bỏ qua khung giờ {d_str}-{hr}: {e}")
-        finally:
-            if not args.local_only:
-                cleanup_local_files(raw_file, parquet_file)
-            elif raw_file:
-                cleanup_local_files(raw_file)
+
+    objs = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="bronze/events_parquet/").get("Contents", [])
+    logger.info(
+        f"Hoàn tất Direct HTTPS -> S3! Tổng số objects trên MinIO: {len(objs)} files | "
+        f"Tổng dung lượng: {_current_minio_total_mb():.2f} MB"
+    )

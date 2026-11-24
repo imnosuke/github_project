@@ -1,4 +1,4 @@
-# Local ML — Hướng dẫn Tải Dữ liệu (~20 MB) & Huấn luyện Model
+# Local ML — Hướng dẫn Tải Dữ liệu (~500 MB) & Huấn luyện Model
 
 - Đặc tả bài toán & đánh giá: [ML-01](../docs/app-ml/ML-01-problem-and-evaluation.md)
 - Thiết kế Feature Builder & Training CLI: [ML-02](../docs/app-ml/ML-02-feature-and-training.md)
@@ -22,25 +22,29 @@ python -m pytest ml/tests -q
 
 ---
 
-## 2. Quy trình chuẩn bị ~20 MB dữ liệu trên ổ cứng & Huấn luyện Model
+## 2. Quy trình chuẩn bị ~500 MB dữ liệu trên ổ cứng & Huấn luyện Model
 
-Contract `ML-01` và `ML-03` yêu cầu chuỗi thời gian liên tục tối thiểu **239 ngày** (lookback 30 ngày + train 60 ngày + purge 30 ngày + validation 30 ngày + purge 30 ngày + test 30 ngày + horizon nhãn 30 ngày). Để vừa có dữ liệu sự kiện GitHub thật từ GH Archive (~18.4 MB Parquet) vừa có chuỗi lịch sử 320 ngày cho 150 repositories (~1.1 MB artifacts) với tổng dung lượng **~19.5 MB trên ổ cứng**, thực hiện 3 bước sau:
+Contract `ML-01` và `ML-03` yêu cầu chuỗi thời gian liên tục tối thiểu **239 ngày** (lookback 30 ngày + train 60 ngày + purge 30 ngày + validation 30 ngày + purge 30 ngày + test 30 ngày + horizon nhãn 30 ngày). Để tải nhiều file sự kiện GitHub thật từ GH Archive đạt ngưỡng **~500 MB Parquet (32 files)** kết hợp cùng chuỗi lịch sử 320 ngày cho 150 repositories, thực hiện 3 bước sau:
 
-### Bước 1: Tải ~18.4 MB dữ liệu sự kiện từ GH Archive sang Parquet
-Chạy script `gharchive_extractor.py` với cờ `--max-records 22000` và `--local-only` (tự động xóa file `.json.gz` sau khi nén sang Parquet Snappy):
+### Bước 1: Stream hàng loạt file từ GH Archive sang Parquet (~518 MB / 32 files)
+Chạy script `gharchive_extractor.py` với chế độ `--stream` (giải nén trực tiếp từ luồng HTTP sang Parquet mà không cần tải cả file `.json.gz` 150 MB về đĩa) và `--target-total-mb 500`:
 
 ```bash
 python airflow/scripts/gharchive_extractor.py \
-  --date 2025-01-15 \
-  --hour 14 \
-  --max-records 22000 \
+  --date 2025-01-01 \
+  --end-date 2025-01-25 \
+  --hours-step 6 \
+  --max-records 24000 \
+  --target-total-mb 500 \
+  --skip-existing \
+  --stream \
   --local-only \
   --output-dir ./airflow/data
 ```
-* File đầu ra: `airflow/data/parquet/2025-01-15-14.parquet` (**18.39 MB**, 22.000 events).
+* Thư mục đầu ra: `airflow/data/parquet/` gồm **32 file Parquet** (**518.17 MB**, ~766.000 events).
 
 ### Bước 2: Tạo bộ dữ liệu huấn luyện chuẩn Contract v1 (150 Repos × 320 Ngày)
-Kết hợp dữ liệu Parquet vừa tải tại `./airflow/data/parquet` vào chuỗi lịch sử 320 ngày của 150 repositories:
+Kết hợp toàn bộ 32 file Parquet vừa tải tại `./airflow/data/parquet` vào chuỗi lịch sử 320 ngày của 150 repositories:
 
 ```bash
 python -m ml.fetch_github_data \
@@ -83,7 +87,7 @@ python -m ml.cli evaluate \
 
 ## 3. Tóm tắt kết quả & Dung lượng ổ cứng
 
-- **Tổng dung lượng trên đĩa:** **~19.27 MB** (`airflow/data/parquet`: ~18.39 MB + `ml/runs`: ~0.88 MB).
+- **Tổng dung lượng trên đĩa:** **~519.05 MB** (`airflow/data/parquet`: ~518.17 MB qua 32 files + `ml/runs`: ~0.88 MB).
 - **Số lượng mẫu học có giám sát (`kept`):** **26.445 mẫu**
   - Tập `train`: **17.446 mẫu** (143 repositories × 122 anchor dates)
   - Tập `validation`: **4.576 mẫu** (143 repositories × 32 anchor dates)

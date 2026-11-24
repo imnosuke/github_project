@@ -103,9 +103,87 @@ def _fetch_weekly_commit_activity(
     return None
 
 
-def _load_local_parquet_events(parquet_dir: Optional[str | Path]) -> Dict[Tuple[str, str], Dict[str, int]]:
+def _load_clickhouse_gold_events(
+    target_repos_lower: Optional[set[str]] = None,
+) -> Dict[Tuple[str, str], Dict[str, int]]:
+    """
+    Đọc trực tiếp dữ liệu sự kiện đã tổng hợp từ bảng `gold.gold_repo_daily_activity`
+    trên ClickHouse (nếu container ClickHouse đang chạy) để gộp vào bộ dữ liệu train ML.
+    """
+    aggregated: Dict[Tuple[str, str], Dict[str, int]] = {}
+    ch_host = os.getenv("CLICKHOUSE_HOST", "localhost")
+    ch_port = os.getenv("CLICKHOUSE_PORT", "8123")
+    ch_user = os.getenv("CLICKHOUSE_USER", "default")
+    ch_password = os.getenv("CLICKHOUSE_PASSWORD", "clickhouse")
+
+    sql = (
+        "SELECT lower(repo_full_name) AS repo_lower, toString(event_date) AS day, "
+        "total_events, stars_gained, forks_count, push_events_count, total_commits_pushed, "
+        "prs_opened, prs_merged, prs_closed_unmerged, issues_opened, issues_closed, "
+        "issue_comments_count, unique_contributors, unique_human_contributors "
+        "FROM gold.gold_repo_daily_activity FORMAT JSONEachRow"
+    )
+    try:
+        resp = requests.post(
+            f"http://{ch_host}:{ch_port}/",
+            data=sql.encode("utf-8"),
+            auth=(ch_user, ch_password),
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            return aggregated
+        for line in resp.text.splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            repo_lower = row.get("repo_lower", "")
+            if target_repos_lower is not None and repo_lower not in target_repos_lower:
+                continue
+            day = row.get("day", "")
+            stars = int(row.get("stars_gained", 0))
+            forks = int(row.get("forks_count", 0))
+            pushes = int(row.get("push_events_count", 0))
+            commits = max(0, int(row.get("total_commits_pushed", 0)))
+            prs_open = int(row.get("prs_opened", 0))
+            prs_merged = int(row.get("prs_merged", 0))
+            prs_unmerged = int(row.get("prs_closed_unmerged", 0))
+            iss_open = int(row.get("issues_opened", 0))
+            iss_closed = int(row.get("issues_closed", 0))
+            comments = int(row.get("issue_comments_count", 0))
+            comp_sum = stars + forks + pushes + prs_open + prs_merged + prs_unmerged + iss_open + iss_closed + comments
+            total = max(int(row.get("total_events", 0)), comp_sum)
+            u_actors = min(total, max(0, int(row.get("unique_contributors", 0))))
+            u_humans = min(u_actors, max(0, int(row.get("unique_human_contributors", 0))))
+            aggregated[(repo_lower, day)] = {
+                "total_events": total,
+                "star_events": stars,
+                "fork_events": forks,
+                "push_events": pushes,
+                "commits_pushed": commits,
+                "prs_opened": prs_open,
+                "prs_merged": prs_merged,
+                "prs_closed_unmerged": prs_unmerged,
+                "issues_opened": iss_open,
+                "issues_closed": iss_closed,
+                "issue_comments": comments,
+                "unique_actors": u_actors,
+                "unique_human_actors": u_humans,
+                "active_contributors": None,
+            }
+        if aggregated:
+            logger.info(f"Đã tải {len(aggregated):,} bản ghi repo-day trực tiếp từ ClickHouse `gold.gold_repo_daily_activity`.")
+    except Exception:
+        pass
+    return aggregated
+
+
+def _load_local_parquet_events(
+    parquet_dir: Optional[str | Path],
+    target_repos_lower: Optional[set[str]] = None,
+) -> Dict[Tuple[str, str], Dict[str, int]]:
     """
     Đọc các file Parquet GH Archive đã tải về ở local (nếu có) và gom nhóm theo (repo_name_lower, YYYY-MM-DD).
+    Chỉ đọc các cột cần thiết (không đọc cột payload_json nặng hàng trăm MB) để xử lý 500MB+ Parquet trong ~1-2 giây.
     """
     aggregated: Dict[Tuple[str, str], Dict[str, int]] = {}
     if not parquet_dir:
@@ -118,18 +196,27 @@ def _load_local_parquet_events(parquet_dir: Optional[str | Path]) -> Dict[Tuple[
     if not parquet_files:
         return aggregated
 
-    logger.info(f"Tìm thấy {len(parquet_files)} file Parquet GH Archive tại {root}, đang tổng hợp...")
+    needed_cols = ["repo_name", "created_at", "event_type", "actor_id", "actor_login"]
+    logger.info(f"Tìm thấy {len(parquet_files)} file Parquet GH Archive tại {root}, đang tổng hợp nhanh...")
     for pq_file in parquet_files:
         try:
-            df = pd.read_parquet(pq_file)
-        except Exception as exc:
-            logger.warning(f"Bỏ qua file Parquet lỗi {pq_file}: {exc}")
-            continue
+            df = pd.read_parquet(pq_file, columns=needed_cols)
+        except Exception:
+            try:
+                df = pd.read_parquet(pq_file)
+            except Exception as exc:
+                logger.warning(f"Bỏ qua file Parquet lỗi {pq_file}: {exc}")
+                continue
         if df.empty or "repo_name" not in df.columns or "created_at" not in df.columns:
             continue
 
         df = df.dropna(subset=["repo_name", "created_at"]).copy()
         df["repo_lower"] = df["repo_name"].astype(str).str.lower()
+        if target_repos_lower is not None:
+            df = df[df["repo_lower"].isin(target_repos_lower)]
+            if df.empty:
+                continue
+
         df["day"] = df["created_at"].astype(str).str.slice(0, 10)
         df["is_bot"] = df["actor_login"].fillna("").astype(str).str.lower().str.endswith("[bot]")
 
@@ -227,7 +314,9 @@ def build_training_dataset(
     days = [(s_date + timedelta(days=i)).isoformat() for i in range(num_days)]
 
     selected_repos = _generate_Expanded_repo_catalog(max(6, num_repos))
-    local_events = _load_local_parquet_events(local_parquet_dir)
+    target_set = {r[0].lower() for r in selected_repos}
+    local_events = _load_clickhouse_gold_events(target_repos_lower=target_set)
+    local_events.update(_load_local_parquet_events(local_parquet_dir, target_repos_lower=target_set))
 
     session = requests.Session()
     registry_rows = []

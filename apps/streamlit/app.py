@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
 from apps.streamlit.data import get_adapter
 from apps.streamlit.explorer import render_explorer
 from apps.streamlit.analytics import render_overview, render_growth
+from apps.streamlit.ml_view import render_ml_forecast
 
 st.set_page_config(page_title="RepoScope · GitHub Analytics", page_icon="📊", layout="wide")
 
@@ -46,7 +47,11 @@ def main():
         st.warning("DEMO — Dữ liệu tổng hợp, không phải hoạt động GitHub thực tế hoặc kết quả ML.")
     with st.sidebar:
         st.header("Điều hướng")
-        page = st.radio("Trang", ["Overview", "Repository Explorer", "Growth Analytics"], key="page")
+        page = st.radio(
+            "Trang",
+            ["Overview", "Repository Explorer", "Growth Analytics", "ML Forecast (30d Stars)"],
+            key="page",
+        )
         st.divider()
         st.caption(f"Nguồn: {envelope['data_source']}")
         st.caption(f"Publication: {envelope['publication_id']}")
@@ -110,8 +115,10 @@ def main():
         render_overview(adapter, start, end)
     elif page == "Repository Explorer":
         render_explorer(adapter, start, end)
-    else:
+    elif page == "Growth Analytics":
         render_growth(adapter, start, end)
+    else:
+        render_ml_forecast(adapter, start, end)
 
 
 main()

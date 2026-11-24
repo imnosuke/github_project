@@ -1,12 +1,14 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
+        incremental_strategy='delete+insert',
+        unique_key='event_date',
         engine='ReplacingMergeTree(_ingested_at)',
         order_by='(event_date, event_type, event_id)'
     )
 }}
 
-WITH deduplicated_bronze AS (
+WITH filtered_bronze AS (
     SELECT
         event_id,
         event_type,
@@ -21,8 +23,22 @@ WITH deduplicated_bronze AS (
         payload_json,
         _source_file,
         _ingested_at
-    FROM {{ source('bronze', 'gharchive_events') }} FINAL
+    FROM {{ source('bronze', 'gharchive_events') }}
     WHERE event_id != ''
+    {% if is_incremental() %}
+      {% set target_dates = var('target_dates', '') %}
+      {% if target_dates != '' %}
+        AND toDate(parseDateTimeBestEffortOrZero(created_at)) IN (
+            {% for d in target_dates.split(',') %}
+              toDate('{{ d.strip() }}'){% if not loop.last %}, {% endif %}
+            {% endfor %}
+        )
+      {% else %}
+        AND toDate(parseDateTimeBestEffortOrZero(created_at)) >= (
+            SELECT coalesce(max(event_date), toDate('1970-01-01')) FROM {{ this }}
+        )
+      {% endif %}
+    {% endif %}
 )
 
 SELECT
@@ -77,5 +93,5 @@ SELECT
     -- Metadata truy vết
     _source_file,
     _ingested_at
-FROM deduplicated_bronze
+FROM filtered_bronze
 
