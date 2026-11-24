@@ -1,0 +1,141 @@
+{
+  "contract_version": "1.0.0-draft",
+  "data_source": "snapshot",
+  "publication_id": "gharchive-ml-2025-01-01-2025-05-15-20repos",
+  "published_at": "2026-11-24T02:44:14.879741Z",
+  "expected_complete_through": null,
+  "includes_synthetic_data": false,
+  "historical_availability_verified": false,
+  "source": "GH Archive public events by UTC hour",
+  "from": "2025-01-01",
+  "through": "2025-05-15",
+  "scope": [
+    {
+      "repository_id": 33884891,
+      "repository_name": "apache/airflow",
+      "requested_name": "apache/airflow",
+      "repository_created_at": "2015-04-13T18:04:58Z"
+    },
+    {
+      "repository_id": 39464018,
+      "repository_name": "apache/superset",
+      "requested_name": "apache/superset",
+      "repository_created_at": "2015-07-21T18:55:34Z"
+    },
+    {
+      "repository_id": 17165658,
+      "repository_name": "apache/spark",
+      "requested_name": "apache/spark",
+      "repository_created_at": "2014-02-25T08:00:08Z"
+    },
+    {
+      "repository_id": 2211243,
+      "repository_name": "apache/kafka",
+      "requested_name": "apache/kafka",
+      "repository_created_at": "2011-08-15T18:06:16Z"
+    },
+    {
+      "repository_id": 158256479,
+      "repository_name": "apache/iceberg",
+      "requested_name": "apache/iceberg",
+      "repository_created_at": "2018-11-19T16:26:46Z"
+    },
+    {
+      "repository_id": 60246359,
+      "repository_name": "ClickHouse/ClickHouse",
+      "requested_name": "ClickHouse/ClickHouse",
+      "repository_created_at": "2016-06-02T08:28:18Z"
+    },
+    {
+      "repository_id": 53548867,
+      "repository_name": "dbt-labs/dbt",
+      "requested_name": "dbt-labs/dbt-core",
+      "repository_created_at": "2016-03-10T02:38:00Z"
+    },
+    {
+      "repository_id": 138754790,
+      "repository_name": "duckdb/duckdb",
+      "requested_name": "duckdb/duckdb",
+      "repository_created_at": "2018-06-26T15:04:45Z"
+    },
+    {
+      "repository_id": 166515022,
+      "repository_name": "trinodb/trino",
+      "requested_name": "trinodb/trino",
+      "repository_created_at": "2019-01-19T06:38:14Z"
+    },
+    {
+      "repository_id": 263727855,
+      "repository_name": "pola-rs/polars",
+      "requested_name": "pola-rs/polars",
+      "repository_created_at": "2020-05-13T19:45:33Z"
+    },
+    {
+      "repository_id": 858127,
+      "repository_name": "pandas-dev/pandas",
+      "requested_name": "pandas-dev/pandas",
+      "repository_created_at": "2010-08-24T01:37:33Z"
+    },
+    {
+      "repository_id": 908607,
+      "repository_name": "numpy/numpy",
+      "requested_name": "numpy/numpy",
+      "repository_created_at": "2010-09-13T23:02:39Z"
+    },
+    {
+      "repository_id": 843222,
+      "repository_name": "scikit-learn/scikit-learn",
+      "requested_name": "scikit-learn/scikit-learn",
+      "repository_created_at": "2010-08-17T09:43:38Z"
+    },
+    {
+      "repository_id": 65600975,
+      "repository_name": "pytorch/pytorch",
+      "requested_name": "pytorch/pytorch",
+      "repository_created_at": "2016-08-13T05:26:41Z"
+    },
+    {
+      "repository_id": 45717250,
+      "repository_name": "tensorflow/tensorflow",
+      "requested_name": "tensorflow/tensorflow",
+      "repository_created_at": "2015-11-07T01:19:20Z"
+    },
+    {
+      "repository_id": 155220641,
+      "repository_name": "huggingface/transformers",
+      "requested_name": "huggingface/transformers",
+      "repository_created_at": "2018-10-29T13:56:00Z"
+    },
+    {
+      "repository_id": 136202695,
+      "repository_name": "mlflow/mlflow",
+      "requested_name": "mlflow/mlflow",
+      "repository_created_at": "2018-06-05T16:05:58Z"
+    },
+    {
+      "repository_id": 204086862,
+      "repository_name": "streamlit/streamlit",
+      "requested_name": "streamlit/streamlit",
+      "repository_created_at": "2019-08-24T00:14:52Z"
+    },
+    {
+      "repository_id": 160919119,
+      "repository_name": "fastapi/fastapi",
+      "requested_name": "fastapi/fastapi",
+      "repository_created_at": "2018-12-08T08:21:47Z"
+    },
+    {
+      "repository_id": 90194616,
+      "repository_name": "pydantic/pydantic",
+      "requested_name": "pydantic/pydantic",
+      "repository_created_at": "2017-05-03T21:23:58Z"
+    }
+  ],
+  "complete_days": 135,
+  "files": {
+    "repository_daily_metrics.parquet": "c907cef41f4cc9c6e99096e493daa3f829972dd6a5ababaf19e25875b647d07f",
+    "daily_data_status.parquet": "083e161aff693f2a4a1560caa80de8fc188396f4e509638ea6dee50f840041bc",
+    "repository_registry.parquet": "9d13ce1b58416a57948d4663a17335cc95c7b9f9736ddfb2044901412bfa0f2f",
+    "repository_metadata.parquet": "6c7c29a7765a94e6aeedf2ece1ac9c76abdd2d6a6f750a3afa2709e9b56458d6"
+  }
+}
