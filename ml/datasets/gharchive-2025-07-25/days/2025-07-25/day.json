@@ -1,0 +1,209 @@
+{
+  "date": "2025-07-25",
+  "status": "provisional",
+  "expected_files": 24,
+  "processed_files": 8,
+  "quality_passed": false,
+  "published_at": "2026-11-24T09:42:47.861912Z",
+  "reason": "Inspect source coverage and quality in daily manifest",
+  "deduplicated_events": 1381,
+  "duplicates_removed": 0,
+  "conflicts": 0,
+  "invalid_events": 0,
+  "malformed_source_records": 0,
+  "metric_issues": {},
+  "files": [
+    {
+      "hour_utc": 0,
+      "url": "https://data.gharchive.org/2025-07-25-0.json.gz",
+      "status": "processed",
+      "compressed_bytes": 76768833,
+      "source_sha256": "1a14313d927339d285c0aa22d8f1c9ed96e8614ec2d25885507cf58014d222f9",
+      "source_md5_verified": true,
+      "parquet_sha256": "7302f9d749a8335bab2e0cf81eee7d590f7e75dfcae28bb49dd760d0809568b9",
+      "scanned_records": 145029,
+      "retained_records": 192,
+      "malformed_records": 0
+    },
+    {
+      "hour_utc": 1,
+      "url": "https://data.gharchive.org/2025-07-25-1.json.gz",
+      "status": "processed",
+      "compressed_bytes": 68750915,
+      "source_sha256": "0cc201548c116c2d8ab5b50aaf1011ec413553736db3a3482f6a220162dffcc7",
+      "source_md5_verified": true,
+      "parquet_sha256": "5e5f8dcd536ea7cf86679c6fe20ff4439f6c08a76241f86ed3923757b7534e37",
+      "scanned_records": 151813,
+      "retained_records": 171,
+      "malformed_records": 0
+    },
+    {
+      "hour_utc": 2,
+      "url": "https://data.gharchive.org/2025-07-25-2.json.gz",
+      "status": "processed",
+      "compressed_bytes": 75727232,
+      "source_sha256": "0da768563959c4187511b8b781042738f30a97cb9e2c296883117be439110586",
+      "source_md5_verified": true,
+      "parquet_sha256": "33638c20acbdb749198fc2c833ed0825b66efa0524afc2ea7e7e7cfaf4b9c662",
+      "scanned_records": 150970,
+      "retained_records": 326,
+      "malformed_records": 0
+    },
+    {
+      "hour_utc": 3,
+      "url": "https://data.gharchive.org/2025-07-25-3.json.gz",
+      "status": "processed",
+      "compressed_bytes": 75410569,
+      "source_sha256": "98cf4824904c3a032a4aa1ce1bda7ec75a486b3833d51b678cf6cec57318e09d",
+      "source_md5_verified": true,
+      "parquet_sha256": "ed6bee89a373a336331b38c46ffdbaa51b1061ba1c73d5f1c52a50bc3c064ca2",
+      "scanned_records": 146513,
+      "retained_records": 134,
+      "malformed_records": 0
+    },
+    {
+      "hour_utc": 4,
+      "url": "https://data.gharchive.org/2025-07-25-4.json.gz",
+      "status": "processed",
+      "compressed_bytes": 71541923,
+      "source_sha256": "575ff15de15c111aa36b20d2f1a5f2b1589834f4fc1d9de8da193eb2375de053",
+      "source_md5_verified": true,
+      "parquet_sha256": "be710061df231b2511f48b1e357f9987570190926b1c9165f4dca55549cc8331",
+      "scanned_records": 147116,
+      "retained_records": 118,
+      "malformed_records": 0
+    },
+    {
+      "hour_utc": 5,
+      "url": "https://data.gharchive.org/2025-07-25-5.json.gz",
+      "status": "processed",
+      "compressed_bytes": 74140139,
+      "source_sha256": "56411aa27012bb09db598de462f622bdfa48cab10c377c0ad3bd1661501eaee5",
+      "source_md5_verified": true,
+      "parquet_sha256": "71514252b9843bf613f9ed0c6bd1d95169e64a373d8467511882f6fa95a02c70",
+      "scanned_records": 151718,
+      "retained_records": 128,
+      "malformed_records": 0
+    },
+    {
+      "hour_utc": 6,
+      "url": "https://data.gharchive.org/2025-07-25-6.json.gz",
+      "status": "processed",
+      "compressed_bytes": 77701435,
+      "source_sha256": "5af0fa68e84a844705ac5bd3691b1ef479eb30b98bac7c42320bc17fd6b01492",
+      "source_md5_verified": true,
+      "parquet_sha256": "80456b0d25efcc40a44a8c0b7c0c0a0b11bc5ae55124c966d59a14b4823fc23f",
+      "scanned_records": 158999,
+      "retained_records": 135,
+      "malformed_records": 0
+    },
+    {
+      "hour_utc": 7,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-7.json.gz"
+    },
+    {
+      "hour_utc": 8,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-8.json.gz"
+    },
+    {
+      "hour_utc": 9,
+      "url": "https://data.gharchive.org/2025-07-25-9.json.gz",
+      "status": "processed",
+      "compressed_bytes": 87130936,
+      "source_sha256": "029945dedeae48d2694507a9e3b29f511c835a38710a346c65767331fde352ec",
+      "source_md5_verified": true,
+      "parquet_sha256": "216f435fdcc23bfdfc8a6b9d4baedbf467ef2c62f7d1273ec3d7e34451e2b1d3",
+      "scanned_records": 160739,
+      "retained_records": 177,
+      "malformed_records": 0
+    },
+    {
+      "hour_utc": 10,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-10.json.gz"
+    },
+    {
+      "hour_utc": 11,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-11.json.gz"
+    },
+    {
+      "hour_utc": 12,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-12.json.gz"
+    },
+    {
+      "hour_utc": 13,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-13.json.gz"
+    },
+    {
+      "hour_utc": 14,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-14.json.gz"
+    },
+    {
+      "hour_utc": 15,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-15.json.gz"
+    },
+    {
+      "hour_utc": 16,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-16.json.gz"
+    },
+    {
+      "hour_utc": 17,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-17.json.gz"
+    },
+    {
+      "hour_utc": 18,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-18.json.gz"
+    },
+    {
+      "hour_utc": 19,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-19.json.gz"
+    },
+    {
+      "hour_utc": 20,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-20.json.gz"
+    },
+    {
+      "hour_utc": 21,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-21.json.gz"
+    },
+    {
+      "hour_utc": 22,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-22.json.gz"
+    },
+    {
+      "hour_utc": 23,
+      "status": "missing",
+      "reason": "Hourly checkpoint had not been published when this export started",
+      "url": "https://data.gharchive.org/2025-07-25-23.json.gz"
+    }
+  ]
+}
