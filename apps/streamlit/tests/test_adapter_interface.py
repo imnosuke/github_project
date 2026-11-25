@@ -124,3 +124,15 @@ def test_clickhouse_snapshot_rejects_gold_metric_mismatch(monkeypatch):
     rows[0]['star_events'] -= 1
     with pytest.raises(ValueError, match='Gold metrics do not match'):
         get_adapter('clickhouse_snapshot', directory)
+
+def test_clickhouse_snapshot_rejects_null_required_pr_counts(monkeypatch):
+    from apps.streamlit.data.clickhouse_snapshot import ClickHouseSnapshotAdapter
+
+    directory = Path(__file__).resolve().parents[1] / "data/snapshots/gharchive-2025-01-15"
+    rows = get_adapter("snapshot", directory).tables["repository_daily_metrics"].to_dict("records")
+    rows[0].update(prs_merged=None, prs_closed_unmerged=None)
+    monkeypatch.setenv("APP_CLICKHOUSE_HOST", "localhost")
+    monkeypatch.setattr(ClickHouseSnapshotAdapter, "read_gold", staticmethod(lambda *_: rows))
+
+    with pytest.raises(ValueError, match="Gold metrics do not match"):
+        get_adapter("clickhouse_snapshot", directory)
