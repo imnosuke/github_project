@@ -26,6 +26,19 @@ def test_app_fixture_training_blocks_and_features_only_cannot_train(tmp_path):
         load_dataset(features)
 
 
+def test_real_snapshot_training_blocks_on_coverage(tmp_path):
+    snapshot = ROOT.parent / "apps/streamlit/data/snapshots/gharchive-2025-01-15"
+    dataset, run = tmp_path / "dataset", tmp_path / "run"
+    assert main(["build", "--snapshot-dir", str(snapshot), "--config", SMOKE, "--output", str(dataset)]) == 0
+    assert main(["train", "--config", SMOKE, "--dataset", str(dataset), "--output", str(run)]) == 2
+    report = json.loads((run / "run.json").read_text())
+    assert report["reason"] == "snapshot_data_gates"
+    assert "calendar_span" in report["blockers"]
+    assert report["publication"]["data_source"] == "snapshot"
+    assert report["warning"].startswith("RETROSPECTIVE SNAPSHOT")
+    assert not (run / "model.json").exists()
+
+
 def test_smoke_end_to_end_artifacts_are_reproducible_and_reloadable(tmp_path):
     fixture = tmp_path / "fixture"
     generate(fixture)
