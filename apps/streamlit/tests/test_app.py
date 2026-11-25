@@ -62,3 +62,20 @@ def test_explorer_filter_and_pagination():
     assert not app.exception
     assert app.selectbox(key="detail_repo").value == 1006
     assert any("Cần ít nhất hai" in item.value for item in app.info)
+
+def test_forecast_demo_is_opt_in_and_fixture_only(monkeypatch):
+    monkeypatch.setenv("APP_DATA_SOURCE", "fixture")
+    monkeypatch.delenv("APP_ENABLE_ML_FORECAST_DEMO", raising=False)
+    app = AppTest.from_file(str(APP)).run()
+    assert "ML Forecast Demo" not in app.sidebar.radio(key="page").options
+
+    monkeypatch.setenv("APP_ENABLE_ML_FORECAST_DEMO", "1")
+    app.run()
+    app.sidebar.radio(key="page").set_value("ML Forecast Demo").run()
+    assert not app.exception
+    assert any("publication" in warning.value for warning in app.warning)
+
+    monkeypatch.setenv("APP_DATA_SOURCE", "snapshot")
+    monkeypatch.setenv("APP_SNAPSHOT_DIR", str(APP.parent / "data/snapshots/gharchive-2025-01-15"))
+    app = AppTest.from_file(str(APP)).run()
+    assert "ML Forecast Demo" not in app.sidebar.radio(key="page").options

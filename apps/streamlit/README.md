@@ -71,3 +71,7 @@ và `.env.example` trong thư mục này. Export biến môi trường trước 
 file mẫu không tự được load. `APP_DATA_SOURCE=clickhouse` hiện báo lỗi rõ ràng
 sau khi validate cấu hình: chưa có live adapter, không fallback sang demo.
 Không commit mật khẩu; live cần DE xác nhận contract và cấp tài khoản chỉ đọc.
+
+## Forecast demo
+
+Bật trang thử nghiệm bằng `APP_ENABLE_ML_FORECAST_DEMO=1` với `APP_DATA_SOURCE=fixture`. `APP_ML_MODEL_DIR` trỏ tới kết quả chạy ML fixture đã hoàn tất. Demo hiển thị kết quả đánh giá fixture có ghi nhãn; phần serving sẽ đọc publication batch theo [dự thảo ML-04](../../docs/app-ml/ML-04-prediction-contract-draft.md).
