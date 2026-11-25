@@ -36,7 +36,7 @@ class Inputs:
                                      (registry, daily, statuses))
         self.publication = dict(publication)
         if (publication.get("contract_version") != "1.0.0-draft"
-                or publication.get("data_source") not in {"fixture", "live"}
+                or publication.get("data_source") not in {"fixture", "snapshot", "live"}
                 or not isinstance(publication.get("publication_id"), str)
                 or not publication["publication_id"].strip()):
             raise ValueError("Unsupported or missing publication contract")

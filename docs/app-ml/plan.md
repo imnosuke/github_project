@@ -225,7 +225,9 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### ML-03 — Huấn luyện và đánh giá trên lịch sử thật
 
-**Chuẩn bị local:** đã có [audit readiness](ML-03-readiness-audit.md) cho coverage, eligibility và split shortfalls. Contract APP-02 vẫn chờ DE xác nhận; chưa có Gold audit hoặc training/evaluation thật. Các checklist nghiệm thu dưới đây giữ nguyên chưa hoàn tất.
+**Chuẩn bị local:** đã có [audit readiness](ML-03-readiness-audit.md) cho coverage, eligibility và split shortfalls. Contract APP-02 và audit trên Gold vẫn chờ DE.
+
+**Đánh giá hồi cứu GH Archive:** đã có [kết quả local và hồ sơ kiểm tra độ phủ](ML-03-retrospective-results.md) trên snapshot 20 repo. Nghiệm thu ML-03 trên Gold còn chờ đối soát và bằng chứng về thời điểm dữ liệu khả dụng.
 
 - [ ] Kiểm tra đủ lookback, label horizon và các giai đoạn evaluation.
 - [ ] Train baseline, sau đó thử một model phù hợp; chỉ tune trên train/validation.
@@ -239,6 +241,8 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 **Dependency:** ML-02; DE bàn giao lịch sử complete đủ dài. Fixture không đáp ứng gate này.
 
 #### ML-04 — Batch inference và tích hợp dự đoán
+
+Đã soạn [dự thảo contract dự đoán](ML-04-prediction-contract-draft.md) để review cùng DE.
 
 - [ ] Chốt prediction contract: repo, prediction date, horizon, output, model version, generated time.
 - [ ] Implement inference và cách ghi output; thống nhất orchestration với DE.
