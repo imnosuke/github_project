@@ -1,0 +1,12 @@
+{
+  "hour_utc": 3,
+  "url": "https://data.gharchive.org/2025-08-30-3.json.gz",
+  "status": "processed",
+  "compressed_bytes": 60984118,
+  "source_sha256": "b9dba2ee9ee1b3a54cffbdd3ce24a525a95b8906787c363fd8c15bcc95585b61",
+  "source_md5_verified": true,
+  "parquet_sha256": "530d0debcda11763cadb8c8e5b53f2d575390759c9c3a3cd14f80d7d0be28e90",
+  "scanned_records": 144434,
+  "retained_records": 41,
+  "malformed_records": 0
+}
