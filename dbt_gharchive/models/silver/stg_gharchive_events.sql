@@ -67,7 +67,11 @@ SELECT
     JSONExtractInt(payload_json, 'pull_request', 'number') AS pr_number,
     nullIf(JSONExtractString(payload_json, 'pull_request', 'title'), '') AS pr_title,
     nullIf(JSONExtractString(payload_json, 'pull_request', 'state'), '') AS pr_state,
-    JSONExtractBool(payload_json, 'pull_request', 'merged') AS pr_merged,
+    CASE JSONExtractRaw(payload_json, 'pull_request', 'merged')
+        WHEN 'true' THEN true
+        WHEN 'false' THEN false
+        ELSE NULL
+    END AS pr_merged,
 
     -- Thông tin IssuesEvent
     JSONExtractInt(payload_json, 'issue', 'number') AS issue_number,
