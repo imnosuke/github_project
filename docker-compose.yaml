@@ -30,7 +30,6 @@ x-airflow-common: &airflow-common
     - ./airflow/scripts:/opt/airflow/scripts
     - ./airflow/logs:/opt/airflow/logs
     - ./airflow/plugins:/opt/airflow/plugins
-    - ./airflow/data:/opt/airflow/data
     - ./dbt_gharchive:/opt/airflow/dbt_gharchive
   depends_on:
     airflow-db:
@@ -116,7 +115,7 @@ services:
     container_name: gharchive-airflow-init
     entrypoint: >
       /bin/bash -c "
-      mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/scripts /opt/airflow/plugins /opt/airflow/data &&
+      mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/scripts /opt/airflow/plugins &&
       airflow db migrate &&
       airflow users create --username airflow --password airflow --firstname Air --lastname Flow --role Admin --email admin@example.com || true
       "

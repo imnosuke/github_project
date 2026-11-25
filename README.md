@@ -139,7 +139,7 @@ docker compose ps
      }
      ```
 4. Luồng xử lý tự động đi qua 7 bước:
-   `resolve_target_datetime` $\rightarrow$ `download_from_gharchive` $\rightarrow$ `convert_to_parquet` $\rightarrow$ `upload_to_minio_s3` $\rightarrow$ `load_to_clickhouse_bronze` $\rightarrow$ `dbt_transform_silver_gold` $\rightarrow$ `cleanup_temp_files`.
+   `resolve_target_datetime` → `stream_gharchive_to_minio_s3` → `load_to_clickhouse_bronze` → `dbt_transform_silver_gold`.
 
 ### 5.2. Kiểm tra dữ liệu trên ClickHouse
 Truy cập [http://localhost:8123/play](http://localhost:8123/play) (User: `default`, Password: `clickhouse`) và chạy thử các câu truy vấn:
@@ -201,28 +201,15 @@ LIMIT 10;
 
 Để phục vụ bài toán dự báo số lượng `star_events` trong 30 ngày tiếp theo (**ML-01 / ML-02 / ML-03**) trên máy cá nhân mà không cần tải hàng trăm GB raw GH Archive, dự án cung cấp chế độ trích xuất giới hạn dung lượng (~20 MB ổ cứng) kết hợp bộ tạo dữ liệu chuẩn **Contract v1**.
 
-### 7.1. Tải dữ liệu thật từ GH Archive về ổ cứng (~18.4 MB Parquet)
-Sử dụng tham số `--max-records 22000` và `--local-only` để tải, giải nén, chuyển sang Parquet nén Snappy và tự động xóa file `.json.gz` tạm:
+### 7.1. Lấy mẫu trên MinIO hoặc dùng snapshot local
+
+Dùng CLI bên dưới cho dữ liệu thăm dò. File ghi dưới `samples/gharchive/` trong MinIO, ngoài đường nạp Bronze. Bộ train demo ở bước sau có thể đọc thư mục Parquet local nếu bạn đã tải mẫu từ MinIO. Dữ liệu demo kết hợp Parquet lấy mẫu với fixture.
 
 ```bash
-python airflow/scripts/gharchive_extractor.py \
-  --date 2025-01-15 \
-  --hour 14 \
-  --max-records 22000 \
-  --local-only \
-  --output-dir ./airflow/data
+python airflow/scripts/gharchive_extractor.py --date 2025-01-15 --hour 14 --max-records 22000
 ```
-* **Kết quả:** Tạo file `airflow/data/parquet/2025-01-15-14.parquet` chứa **22.000 sự kiện GitHub thật** (~**18.39 MB** trên ổ cứng).
-* Nếu muốn tải nhiều ngày và chỉ lọc 50 repositories phổ biến để nhẹ máy:
-  ```bash
-  python airflow/scripts/gharchive_extractor.py \
-    --date 2025-01-01 \
-    --end-date 2025-01-07 \
-    --hours-step 6 \
-    --filter-default-repos \
-    --local-only \
-    --output-dir ./airflow/data
-  ```
+
+Để chạy trên lịch sử đã crawl, dùng [kết quả và snapshot ML-03](docs/app-ml/ML-03-retrospective-results.md).
 
 ### 7.2. Tổng hợp Dataset theo chuẩn Contract v1 (150 Repos × 320 Ngày)
 Gộp dữ liệu Parquet GH Archive vừa tải với danh mục 150 repositories trong 320 ngày (vượt ngưỡng tối thiểu 239 ngày của `ML-01` / `ML-03`):

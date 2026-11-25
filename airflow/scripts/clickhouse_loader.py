@@ -96,14 +96,7 @@ def load_minio_parquet_to_bronze(
 
     logger.info(f"Đang nạp dữ liệu Parquet từ MinIO vào ClickHouse Bronze: {s3_http_url}")
 
-    # Xóa dữ liệu cũ của cùng file (nếu chạy lại / backfill) để đảm bảo idempotency
-    delete_old_sql = f"""
-    ALTER TABLE bronze.gharchive_events
-    DELETE WHERE _source_file = '{filename}'
-    SETTINGS mutations_sync = 1
-    """
-    execute_clickhouse_sql(delete_old_sql, database="bronze")
-
+    # Append first. Silver reads FINAL so replaying an immutable source hour is idempotent.
     insert_sql = f"""
     INSERT INTO bronze.gharchive_events
     (
@@ -145,7 +138,7 @@ def load_minio_parquet_to_bronze(
     execute_clickhouse_sql(insert_sql, database="bronze")
 
     count_str = execute_clickhouse_sql(
-        f"SELECT count() FROM bronze.gharchive_events WHERE _source_file = '{filename}'",
+        f"SELECT count() FROM bronze.gharchive_events FINAL WHERE _source_file = '{filename}'",
         database="bronze",
     )
     inserted_rows = int(count_str or 0)
