@@ -103,8 +103,10 @@ def test_invalid_clickhouse_config(key, value):
 
 def test_clickhouse_source_does_not_fall_back(monkeypatch):
     monkeypatch.setenv('APP_CLICKHOUSE_HOST', 'localhost')
-    with pytest.raises(NotImplementedError, match='live adapter is not implemented'):
-        get_adapter('clickhouse')
+    from apps.streamlit.data import clickhouse_publication
+    monkeypatch.setattr(clickhouse_publication, "read_rows", lambda *_, **__: [])
+    with pytest.raises(RuntimeError, match="no committed APP-02 publication"):
+        get_adapter("clickhouse")
     with pytest.raises(ValueError, match='APP_DATA_SOURCE'):
         get_adapter('unknown')
 

@@ -1,14 +1,13 @@
 """Read a single-day Gold snapshot and reconcile it against its APP-02 evidence."""
 
 import json
-from http.client import HTTPConnection, HTTPException, HTTPSConnection
 from ipaddress import ip_address
-from urllib.parse import urlencode
 
 import pandas as pd
 
 from .adapter import COUNTS, SnapshotAdapter
 from .config import ClickHouseConfig
+from .clickhouse_http import read_rows
 
 
 GOLD_QUERY = """
@@ -56,25 +55,10 @@ class ClickHouseSnapshotAdapter(SnapshotAdapter):
     def read_gold(config: ClickHouseConfig, day, scope):
         if config.host != "localhost" and not _is_loopback(config.host):
             raise ValueError("ClickHouse snapshot requires a local loopback host")
-        params = urlencode({"readonly": 1, "param_database": config.database,
-                            "param_day": day, "param_scope": json.dumps(scope),
-                            "param_row_limit": len(scope) + 1})
-        connect = HTTPSConnection if config.secure else HTTPConnection
-        connection = connect(config.host, config.port, timeout=config.connect_timeout)
-        try:
-            connection.connect()
-            connection.sock.settimeout(config.query_timeout)
-            connection.request("POST", f"/?{params}", body=GOLD_QUERY.encode("utf-8"),
-                               headers={"X-ClickHouse-User": config.username,
-                                        "X-ClickHouse-Key": config.password})
-            with connection.getresponse() as response:
-                if response.status != 200:
-                    raise RuntimeError(f"Local ClickHouse Gold returned HTTP {response.status}")
-                return [json.loads(line) for line in response]
-        except (HTTPException, OSError) as exc:
-            raise RuntimeError(f"Could not read local ClickHouse Gold ({type(exc).__name__})") from None
-        finally:
-            connection.close()
+        return read_rows(config, GOLD_QUERY, {
+            "database": config.database, "day": day, "scope": json.dumps(scope),
+            "row_limit": len(scope) + 1,
+        }, row_limit=len(scope) + 1)
 
 
 def _is_loopback(host):

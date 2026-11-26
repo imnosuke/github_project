@@ -18,7 +18,7 @@ from apps.streamlit.analytics import render_overview, render_growth
 st.set_page_config(page_title="RepoScope · GitHub Analytics", page_icon="📊", layout="wide")
 
 
-@st.cache_resource
+@st.cache_resource(ttl=300)
 def load_adapter(source, directory, interface_version):
     # Include the consumer interface in the cache key across hot reloads.
     return get_adapter(source=source, directory=directory)

@@ -117,3 +117,13 @@ SETTINGS join_use_nulls = 1;
 Giữ một đường đọc Gold thông qua adapter của APP-02. Chế độ `clickhouse_snapshot` dùng một snapshot tham chiếu đã đối soát, truy vấn bằng ID repo và ngày, và báo lỗi nếu Gold lệch snapshot. Đây là bước kiểm thử mapping local.
 
 Để mở adapter live, DE bàn giao Gold cùng registry, status/coverage theo giờ và publication ID nhất quán. Phía APP/ML xác nhận kiểu nullable của hai cột PR, độ đầy đủ của scope và thời điểm publication khả dụng. Đọc bằng quyền read-only, lọc ngày/phạm vi ở ClickHouse, giữ NULL cho số đếm chưa xác định và báo lỗi nguồn rõ ràng. Giữ Gold và dữ liệu mẫu ở hai đường đọc riêng để tránh ghi đè hoặc trộn nguồn trong feature/label.
+
+## Biên bản kiểm thử APP-07/APP-11 phía ứng dụng
+
+Đã dùng schema APP-02 trên ClickHouse 24.3.12.75 local với tài khoản chỉ được SELECT. Nạp snapshot hồi cứu của 20 repo, gồm 60 ngày complete 2025-08-14–2025-10-12 UTC và 2025-10-13 provisional, vào một publication kiểm thử. Thực hiện truy vấn qua HTTP và chạy Streamlit AppTest. Overview, Explorer và Growth đều chạy thành công. Growth 30 ngày có đủ 20 repo trong hai kỳ, và Overview ẩn KPI toàn kỳ khi chọn qua ngày provisional.
+
+Các bước nghiệm thu còn lại với DE:
+
+1. Chạy DAG trên staging đủ 24 giờ và retry lần nữa theo [checklist pipeline](../gharchive-streaming-staging.md). Lưu run ID, scope, checksum/coverage, số dòng Bronze, Silver và Gold trước/sau.
+2. Đối soát Gold với ca 2025-01-15 cho hai repo. Bàn giao endpoint SELECT và chuỗi publication có registry, status, timestamps cùng phạm vi.
+3. Chạy APP-11 trên dữ liệu live. Ghi thời gian query, freshness, cảnh báo thiếu/trễ dữ liệu và kiểm tra Explorer → Overview → Growth trong hai kỳ 30 ngày.
