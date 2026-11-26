@@ -1,0 +1,621 @@
+{
+  "mode": "retrospective_event_time",
+  "publication": {
+    "contract_version": "1.0.0-draft",
+    "data_source": "snapshot",
+    "publication_id": "gharchive-ml-2025-11-09-2026-02-05-20repos",
+    "published_at": "2026-11-26T10:26:56.073515Z",
+    "expected_complete_through": null
+  },
+  "locked_at_utc": "2026-11-26T10:36:28.434518+00:00",
+  "anchors": [
+    "2025-12-08",
+    "2025-12-09",
+    "2025-12-10",
+    "2025-12-11",
+    "2025-12-12",
+    "2025-12-13",
+    "2025-12-14",
+    "2025-12-15",
+    "2025-12-16",
+    "2025-12-17",
+    "2025-12-18",
+    "2025-12-19",
+    "2025-12-20",
+    "2025-12-21",
+    "2025-12-22",
+    "2025-12-23",
+    "2025-12-24",
+    "2025-12-25",
+    "2025-12-26",
+    "2025-12-27",
+    "2025-12-28",
+    "2025-12-29",
+    "2025-12-30",
+    "2025-12-31",
+    "2026-01-01",
+    "2026-01-02",
+    "2026-01-03",
+    "2026-01-04",
+    "2026-01-05",
+    "2026-01-06"
+  ],
+  "required_coverage": [
+    "2025-11-09",
+    "2026-02-05"
+  ],
+  "repository_ids": [
+    843222,
+    858127,
+    908607,
+    2211243,
+    17165658,
+    33884891,
+    39464018,
+    45717250,
+    53548867,
+    60246359,
+    65600975,
+    90194616,
+    136202695,
+    138754790,
+    155220641,
+    158256479,
+    160919119,
+    166515022,
+    204086862,
+    263727855
+  ],
+  "rows": 600,
+  "hours_verified": 2136,
+  "days_verified": [
+    {
+      "date_utc": "2025-11-09",
+      "hours": 24,
+      "unique_events": 1147,
+      "day_manifest_sha256": "e787ca346532bd9ad1b59c35eb7290ce9201e2e14ce7cada454b778d9b97f9f7"
+    },
+    {
+      "date_utc": "2025-11-10",
+      "hours": 24,
+      "unique_events": 2688,
+      "day_manifest_sha256": "61fe3681ffcc35aef1b3bd319dbe8c02c88207ac973927ba50a2c9e196fb5ab3"
+    },
+    {
+      "date_utc": "2025-11-11",
+      "hours": 24,
+      "unique_events": 2641,
+      "day_manifest_sha256": "d5b36ad8ea88f13cd66ace7c6340a79757f31ebc166fb9775a9f256cb0ef7070"
+    },
+    {
+      "date_utc": "2025-11-12",
+      "hours": 24,
+      "unique_events": 3345,
+      "day_manifest_sha256": "06716ff182e06cd2fc442881e3035bd02d7579ca6e3644cb36d5120d541695a0"
+    },
+    {
+      "date_utc": "2025-11-13",
+      "hours": 24,
+      "unique_events": 3437,
+      "day_manifest_sha256": "58a9f7616f88281634cb2c2c0c3382244d26164da67b56e7b0a9e1b6a54a02ba"
+    },
+    {
+      "date_utc": "2025-11-14",
+      "hours": 24,
+      "unique_events": 3745,
+      "day_manifest_sha256": "14dc761eb9bd36d3b61ec0e0e18d8aee43797016b494d63d4f0aad7738d45321"
+    },
+    {
+      "date_utc": "2025-11-15",
+      "hours": 24,
+      "unique_events": 1697,
+      "day_manifest_sha256": "6b611066958f57b9f1ce2d55e10d16a774e97f9ae82df4ab6ae73738cf5c2350"
+    },
+    {
+      "date_utc": "2025-11-16",
+      "hours": 24,
+      "unique_events": 1285,
+      "day_manifest_sha256": "cd7867be3c3eb15ac72d7762fe05cff78f2d8e568783cef7dcac08f5b905f32e"
+    },
+    {
+      "date_utc": "2025-11-17",
+      "hours": 24,
+      "unique_events": 3208,
+      "day_manifest_sha256": "1a8edd12267e1875dd7f1536ef6007c833378c0d2675328c580ee33e5e0ccf40"
+    },
+    {
+      "date_utc": "2025-11-18",
+      "hours": 24,
+      "unique_events": 3231,
+      "day_manifest_sha256": "7638cc3ec3c1a1d30dff207dc127b456a1ba00a72c592bf47bbae39934aa7b37"
+    },
+    {
+      "date_utc": "2025-11-19",
+      "hours": 24,
+      "unique_events": 2824,
+      "day_manifest_sha256": "96a5dea619fb1fbcb5788547ccd02cd9a77e9ecc5c90de6a8aae9c4d2fee1507"
+    },
+    {
+      "date_utc": "2025-11-20",
+      "hours": 24,
+      "unique_events": 2947,
+      "day_manifest_sha256": "afa94b5bfbe97014a69c3f811ab95f954177b61b292b6fff4c4a3dd24df4ee5c"
+    },
+    {
+      "date_utc": "2025-11-21",
+      "hours": 24,
+      "unique_events": 3381,
+      "day_manifest_sha256": "7ba93dd561f26330ba4fd70ac39ba934f46d79c77cd1c235a45fa203f0b22ebf"
+    },
+    {
+      "date_utc": "2025-11-22",
+      "hours": 24,
+      "unique_events": 1990,
+      "day_manifest_sha256": "ce5af719a000f618afc286e321823382c538dd2aa18b024441eb1181bd1b3e1e"
+    },
+    {
+      "date_utc": "2025-11-23",
+      "hours": 24,
+      "unique_events": 1023,
+      "day_manifest_sha256": "bf2050b5950a6a6f7e08a3a01306dde63a72c3ba28116a7ffa36e91c499ecab0"
+    },
+    {
+      "date_utc": "2025-11-24",
+      "hours": 24,
+      "unique_events": 2642,
+      "day_manifest_sha256": "495da050fa9f974bc5da2918f5e832f2ded157eb20c3595a355ac796fe1ac3a4"
+    },
+    {
+      "date_utc": "2025-11-25",
+      "hours": 24,
+      "unique_events": 3510,
+      "day_manifest_sha256": "1018630864bcb3b99f0ea2209ba03fcea52e8220be6b4257e1cecad60fdbb6f0"
+    },
+    {
+      "date_utc": "2025-11-26",
+      "hours": 24,
+      "unique_events": 2693,
+      "day_manifest_sha256": "46d4130cedd4105a1dae05dae21f953cd75a98ad2b88a3b15d737760069d3225"
+    },
+    {
+      "date_utc": "2025-11-27",
+      "hours": 24,
+      "unique_events": 2223,
+      "day_manifest_sha256": "227fd529f907a8107209254bfd05ffcb18d5e7e24243b4305a5fefb59ebd9379"
+    },
+    {
+      "date_utc": "2025-11-28",
+      "hours": 24,
+      "unique_events": 2782,
+      "day_manifest_sha256": "54255447913a97b7c220c47f267ddeaaefeccca301289bf9f517627cf2b45bc9"
+    },
+    {
+      "date_utc": "2025-11-29",
+      "hours": 24,
+      "unique_events": 1245,
+      "day_manifest_sha256": "35f2b8e414a13187fb3c9c8df914733de4e49bd7dc300d299137fde85afcabc6"
+    },
+    {
+      "date_utc": "2025-11-30",
+      "hours": 24,
+      "unique_events": 1028,
+      "day_manifest_sha256": "b1e31ce49d9e4739c07c946eb76aa70a907470fec834293806474b95f5a65159"
+    },
+    {
+      "date_utc": "2025-12-01",
+      "hours": 24,
+      "unique_events": 2124,
+      "day_manifest_sha256": "ec42020899408676fe52d6a845ba1a09bffa758301dd5a193dbcbe20b20b0699"
+    },
+    {
+      "date_utc": "2025-12-02",
+      "hours": 24,
+      "unique_events": 3821,
+      "day_manifest_sha256": "453c05e1e7ab8275b9f1fb32a15e9489188a9ae42dcc725f38e380365ec2eda3"
+    },
+    {
+      "date_utc": "2025-12-03",
+      "hours": 24,
+      "unique_events": 3485,
+      "day_manifest_sha256": "124f5198ef9493ef8fe1c99d4925838f7e03c95d56cf04fd3c06fedf04a6f0c2"
+    },
+    {
+      "date_utc": "2025-12-04",
+      "hours": 24,
+      "unique_events": 4021,
+      "day_manifest_sha256": "82cdde4240f31a4eb0cf9f8633e6ced0df2ef84bea9954ef2352853f2c517a89"
+    },
+    {
+      "date_utc": "2025-12-05",
+      "hours": 24,
+      "unique_events": 3966,
+      "day_manifest_sha256": "58663942ec874a28f91300381716fb2859fc1a087cac7eefd1e7c02be544a9b3"
+    },
+    {
+      "date_utc": "2025-12-06",
+      "hours": 24,
+      "unique_events": 1639,
+      "day_manifest_sha256": "36c9f2be81fd2ab021cd6f203be9f06072b2d3b7b7f9499ad045bca932acadb6"
+    },
+    {
+      "date_utc": "2025-12-07",
+      "hours": 24,
+      "unique_events": 1346,
+      "day_manifest_sha256": "0be52b72011afd6efad01ee33e664288f35ed3081736a32a8fdc4934fdcb91e2"
+    },
+    {
+      "date_utc": "2025-12-08",
+      "hours": 24,
+      "unique_events": 3646,
+      "day_manifest_sha256": "0e247d15d6e936e3716b133fa48a187ff71a2576e26c7ec40f81a5234a480a08"
+    },
+    {
+      "date_utc": "2025-12-09",
+      "hours": 24,
+      "unique_events": 3910,
+      "day_manifest_sha256": "9c142db094770c567c5acd8b5c9a66f00e389f034e683608a9dddd9bdc4539d7"
+    },
+    {
+      "date_utc": "2025-12-10",
+      "hours": 24,
+      "unique_events": 3666,
+      "day_manifest_sha256": "8edab4acfb813a46feea33df3f4a1783262d8eb441be4cc5b8bdc9bcd3ba647e"
+    },
+    {
+      "date_utc": "2025-12-11",
+      "hours": 24,
+      "unique_events": 4473,
+      "day_manifest_sha256": "b72e487fb5f2b446bf3e69b4fd37c07cf4e0611f9cd9d76dc0f1db07f52fc2d1"
+    },
+    {
+      "date_utc": "2025-12-12",
+      "hours": 24,
+      "unique_events": 3971,
+      "day_manifest_sha256": "1881fc0744e943ac05be501a8eda8ef788a09b27110f3dd451b44ec522846bf3"
+    },
+    {
+      "date_utc": "2025-12-13",
+      "hours": 24,
+      "unique_events": 1580,
+      "day_manifest_sha256": "21b75956d57af3b9dfa0f122683b3aea0d8980a3cac951b60f55fde0d68b3d07"
+    },
+    {
+      "date_utc": "2025-12-14",
+      "hours": 24,
+      "unique_events": 1056,
+      "day_manifest_sha256": "9686a4c339da7f9066d8b35865bd0c21f6afd9e29e5a3323cec95d8b9622ea3f"
+    },
+    {
+      "date_utc": "2025-12-15",
+      "hours": 24,
+      "unique_events": 2994,
+      "day_manifest_sha256": "afec01f3c926682d2027479a188c7fd5de057a08283ab2cbb99a6ccba914a09f"
+    },
+    {
+      "date_utc": "2025-12-16",
+      "hours": 24,
+      "unique_events": 4243,
+      "day_manifest_sha256": "907e4f55334c40f53c22dbbfb17f451d2027c371bc6badc71eb30f00443d29f4"
+    },
+    {
+      "date_utc": "2025-12-17",
+      "hours": 24,
+      "unique_events": 4572,
+      "day_manifest_sha256": "363ce35727c43ec6dba422b1ea9dc9440764768ac734315fa90cc5bbf772e369"
+    },
+    {
+      "date_utc": "2025-12-18",
+      "hours": 24,
+      "unique_events": 4472,
+      "day_manifest_sha256": "02db0762cae06dd38d5501c87a0b3f52d4ee471a73a5b3cdc2456d583be79452"
+    },
+    {
+      "date_utc": "2025-12-19",
+      "hours": 24,
+      "unique_events": 3866,
+      "day_manifest_sha256": "6e123f04eb63c954d3076f140ea57fbae46a56d145398fe9865447bddef87d3a"
+    },
+    {
+      "date_utc": "2025-12-20",
+      "hours": 24,
+      "unique_events": 1955,
+      "day_manifest_sha256": "1c5285f3512a1b2c756e75b8e2189fab90268a9110552e875ba1ae2c0ba95dc9"
+    },
+    {
+      "date_utc": "2025-12-21",
+      "hours": 24,
+      "unique_events": 1394,
+      "day_manifest_sha256": "70a86fef7132a13cfe5d06881f05d5307db1daae8a1b3cf9666ba03bdb01d95e"
+    },
+    {
+      "date_utc": "2025-12-22",
+      "hours": 24,
+      "unique_events": 3262,
+      "day_manifest_sha256": "a94a35e17b371b45688194641d2bdc14f42f7ff16acb67424568ba1cf43c0ac9"
+    },
+    {
+      "date_utc": "2025-12-23",
+      "hours": 24,
+      "unique_events": 3367,
+      "day_manifest_sha256": "6913a5ac18238abdeb19d8eb4a4ce26466ed243c225329866145311a24721028"
+    },
+    {
+      "date_utc": "2025-12-24",
+      "hours": 24,
+      "unique_events": 2250,
+      "day_manifest_sha256": "66b94eff373eee7127caa3e0db5b56e555ad59120a08512b6f4a4b29444d51b3"
+    },
+    {
+      "date_utc": "2025-12-25",
+      "hours": 24,
+      "unique_events": 1330,
+      "day_manifest_sha256": "47f3e50d62162c8db0deffa657cd84a5e8462787284b9df6ee7afb9f0b995327"
+    },
+    {
+      "date_utc": "2025-12-26",
+      "hours": 24,
+      "unique_events": 1674,
+      "day_manifest_sha256": "035438cfe25707251f5f395f561207e592274b9e6208c8d6b5791fb192fdbae7"
+    },
+    {
+      "date_utc": "2025-12-27",
+      "hours": 24,
+      "unique_events": 1185,
+      "day_manifest_sha256": "28b2bd4ea4f3010465227c2fd902589e2779873621a8c4be66636d8d3d5ea21e"
+    },
+    {
+      "date_utc": "2025-12-28",
+      "hours": 24,
+      "unique_events": 1323,
+      "day_manifest_sha256": "d027b280bdb83c9bf4d2b7f6b4a23dcbd7f701a0604b5d0a311460c95108d61e"
+    },
+    {
+      "date_utc": "2025-12-29",
+      "hours": 24,
+      "unique_events": 2482,
+      "day_manifest_sha256": "1c58172dcb3b12a43338742a0817f042508bd54b28a9821fb6f230b6ba24b941"
+    },
+    {
+      "date_utc": "2025-12-30",
+      "hours": 24,
+      "unique_events": 2605,
+      "day_manifest_sha256": "6c8c2a92775fb711ebb66fbf940ac07d7afcc4a29bd0b7aebe372a9dde929c6d"
+    },
+    {
+      "date_utc": "2025-12-31",
+      "hours": 24,
+      "unique_events": 1743,
+      "day_manifest_sha256": "6c34f50045ed3c379ef323d251a7e8f0fd2f1fe3cce1e2beb5bee4ddfdecfb31"
+    },
+    {
+      "date_utc": "2026-01-01",
+      "hours": 24,
+      "unique_events": 958,
+      "day_manifest_sha256": "122a1cb10c247cdccc5fc48b05f32d3236d58ea9fc684e986be6ae00fd16f761"
+    },
+    {
+      "date_utc": "2026-01-02",
+      "hours": 24,
+      "unique_events": 2022,
+      "day_manifest_sha256": "7a2813982b8bb0c4d55c79cc3e74c540e091558f8cc7efa7db2ab73712f82ef7"
+    },
+    {
+      "date_utc": "2026-01-03",
+      "hours": 24,
+      "unique_events": 1262,
+      "day_manifest_sha256": "c15b97e2e46b9af1da05ca2ae2edec471e995b40c4e2e32bcb1d0aab751bef5b"
+    },
+    {
+      "date_utc": "2026-01-04",
+      "hours": 24,
+      "unique_events": 1145,
+      "day_manifest_sha256": "53e71f479ed5b30599eb57b56652160290e25171df1fbe5113610e50113f819e"
+    },
+    {
+      "date_utc": "2026-01-05",
+      "hours": 24,
+      "unique_events": 3128,
+      "day_manifest_sha256": "a14b892e864d2c0fc5938162d805c82cf7e24ae9036c838e5319486598e91c89"
+    },
+    {
+      "date_utc": "2026-01-06",
+      "hours": 24,
+      "unique_events": 3709,
+      "day_manifest_sha256": "0aaf195c444d212a14bc18541bd465a0086690145de7f90ad279664621f96d8c"
+    },
+    {
+      "date_utc": "2026-01-07",
+      "hours": 24,
+      "unique_events": 4229,
+      "day_manifest_sha256": "c4ade6d871534dbc8c77aa5e61bcaec1f56d4d7c6e029aff66ca36771d440af7"
+    },
+    {
+      "date_utc": "2026-01-08",
+      "hours": 24,
+      "unique_events": 4110,
+      "day_manifest_sha256": "01c84130f62064f75b8d2f41ff5ee00e8e44e9c96267e85f70e624e2bf44c822"
+    },
+    {
+      "date_utc": "2026-01-09",
+      "hours": 24,
+      "unique_events": 4060,
+      "day_manifest_sha256": "50a47d90933dffd1fd6b6e39eb8f6013d14d172f13a373dc424e2224f02467d2"
+    },
+    {
+      "date_utc": "2026-01-10",
+      "hours": 24,
+      "unique_events": 1719,
+      "day_manifest_sha256": "ac77f674a5d86024ae45fdef90fbb518cade38cbaaf90fbc22acf6140d13c065"
+    },
+    {
+      "date_utc": "2026-01-11",
+      "hours": 24,
+      "unique_events": 1454,
+      "day_manifest_sha256": "c66f6ae76fa86c9d2372e9e054e5074b77d8aabfbe7d948d54b8c857556ae838"
+    },
+    {
+      "date_utc": "2026-01-12",
+      "hours": 24,
+      "unique_events": 3578,
+      "day_manifest_sha256": "8d863df5af11b2c01c01f44e7dc6ec70428508e7dd68e624b64e783b5f8fbaee"
+    },
+    {
+      "date_utc": "2026-01-13",
+      "hours": 24,
+      "unique_events": 3433,
+      "day_manifest_sha256": "1c2239a9df5644c5467a7ee043d5174b72972eae8a727f4219c3b4d85c01cc23"
+    },
+    {
+      "date_utc": "2026-01-14",
+      "hours": 24,
+      "unique_events": 3992,
+      "day_manifest_sha256": "da23eee4fb050ff529986dd60ddde8308cb986a2eac9f097115dcabba6b62427"
+    },
+    {
+      "date_utc": "2026-01-15",
+      "hours": 24,
+      "unique_events": 3450,
+      "day_manifest_sha256": "63ddc523963260bce0b1116330b173b62ab64604b52bca42b9297c456c7e29e3"
+    },
+    {
+      "date_utc": "2026-01-16",
+      "hours": 24,
+      "unique_events": 3551,
+      "day_manifest_sha256": "b65b8c5c3ce903acd1c84e18feea5ebd37db98ee97c0faa193813e02ba839b38"
+    },
+    {
+      "date_utc": "2026-01-17",
+      "hours": 24,
+      "unique_events": 1921,
+      "day_manifest_sha256": "c483b09dd82d49d4f5f7d7702c0a5345322101361a490a65acf0f60d0a855ec4"
+    },
+    {
+      "date_utc": "2026-01-18",
+      "hours": 24,
+      "unique_events": 1327,
+      "day_manifest_sha256": "d1768a7ed3053b25a40c799901755eb4a06cba378b5081f250e6550499321c78"
+    },
+    {
+      "date_utc": "2026-01-19",
+      "hours": 24,
+      "unique_events": 2131,
+      "day_manifest_sha256": "c1aa355d12e20e9a36fda216214c9bf4df8336a730d10c5213fabb3057f3a5d4"
+    },
+    {
+      "date_utc": "2026-01-20",
+      "hours": 24,
+      "unique_events": 3201,
+      "day_manifest_sha256": "4990023dc5f0c0442fb307a84dce9809274677a32f5b6c676f798cdb7798fb12"
+    },
+    {
+      "date_utc": "2026-01-21",
+      "hours": 24,
+      "unique_events": 3483,
+      "day_manifest_sha256": "e65603c30b3559bc1a5e704bc089806ac2ad8d4a4fdafb17065467632ede1692"
+    },
+    {
+      "date_utc": "2026-01-22",
+      "hours": 24,
+      "unique_events": 3261,
+      "day_manifest_sha256": "486c0bfc0351d2da3b5b915dccd83c6dda5acd456c1431b4c8c3a7b0ec1ea5a6"
+    },
+    {
+      "date_utc": "2026-01-23",
+      "hours": 24,
+      "unique_events": 3381,
+      "day_manifest_sha256": "dc3bede93184640e49492488e8df670dab6d31075afd604f5564ac8bd6dd73f1"
+    },
+    {
+      "date_utc": "2026-01-24",
+      "hours": 24,
+      "unique_events": 1789,
+      "day_manifest_sha256": "d51b3ac62a9e4a5e3f564bb7f8ed753817c0278306ba29878b6a8fd78c1ba70a"
+    },
+    {
+      "date_utc": "2026-01-25",
+      "hours": 24,
+      "unique_events": 1260,
+      "day_manifest_sha256": "7bb6ee6dae220703802143043cc2fd403b44891d8b78ac81a51a0be0514accd6"
+    },
+    {
+      "date_utc": "2026-01-26",
+      "hours": 24,
+      "unique_events": 2834,
+      "day_manifest_sha256": "d2f342156947ef70e65f5dd77d012888bc5c7ad19fe1c21ab91a5d684f235afa"
+    },
+    {
+      "date_utc": "2026-01-27",
+      "hours": 24,
+      "unique_events": 3623,
+      "day_manifest_sha256": "eb47cc2c1a5620121d993234ed50f301a9466dd00ed522c67e6767f489d2aaae"
+    },
+    {
+      "date_utc": "2026-01-28",
+      "hours": 24,
+      "unique_events": 3560,
+      "day_manifest_sha256": "89b0211c26dd56924719998257845132d150dc721855b3a555d5be06b9717b27"
+    },
+    {
+      "date_utc": "2026-01-29",
+      "hours": 24,
+      "unique_events": 3634,
+      "day_manifest_sha256": "c8fb25dae07f92d393ef98c14a946e46a9ccc30fa6a664f29017b4a44f9fea6c"
+    },
+    {
+      "date_utc": "2026-01-30",
+      "hours": 24,
+      "unique_events": 3163,
+      "day_manifest_sha256": "6edc33b257bfdfc44a3c914c7052c860196b5c1a348128d1acfe938a0490458e"
+    },
+    {
+      "date_utc": "2026-01-31",
+      "hours": 24,
+      "unique_events": 1839,
+      "day_manifest_sha256": "615b8809c778d9f792c0ce6f61c50918d41933be127049257529a7c399984613"
+    },
+    {
+      "date_utc": "2026-02-01",
+      "hours": 24,
+      "unique_events": 1236,
+      "day_manifest_sha256": "a25434b2eb73bdeeba1a7d1844c29e30ff4971ad02b35ed6773d552169e38697"
+    },
+    {
+      "date_utc": "2026-02-02",
+      "hours": 24,
+      "unique_events": 2883,
+      "day_manifest_sha256": "b39c2ef622d4cecea7f333f6fcc5513c8030c6ed86e34a91c977b8d2c485e808"
+    },
+    {
+      "date_utc": "2026-02-03",
+      "hours": 24,
+      "unique_events": 3275,
+      "day_manifest_sha256": "2655ce837b19841470fd55d576e61181f414b7e3a311f0f381ebaaff54bdacce"
+    },
+    {
+      "date_utc": "2026-02-04",
+      "hours": 24,
+      "unique_events": 2608,
+      "day_manifest_sha256": "4848028e77c6249849e1fe245676dd0cf475d0e11e15218d33057270622ed2a7"
+    },
+    {
+      "date_utc": "2026-02-05",
+      "hours": 24,
+      "unique_events": 3035,
+      "day_manifest_sha256": "3002edae46259d138e6ac0879847e3d956f2280429210516aa63945839212a02"
+    }
+  ],
+  "app02_status_days": {
+    "provisional": 89
+  },
+  "source_metric_issues": {
+    "push_size_missing_or_invalid": 40201,
+    "pr_merge_flag_missing": 2255
+  },
+  "verified_empty_repo_days": 1,
+  "samples_sha256": "85ec2b8ee7d20d8620030a918f610656eca28eaa60b301c9d5e3e52967be7593",
+  "snapshot_manifest_sha256": "f7c3ffb543014d95cf5897733b59b61f09eb2e974f44f7e39a1d0d1db18d9138",
+  "frozen_candidates_sha256": "1a38d80804eea11edee7ad136824fe009cb8811c42c7297d4d259de3c89a7e53",
+  "scoring_script_sha256": "a644fab5955c741c43293749f6bcd6c5db4df7518899f3f77b82a1815b9d5ff7",
+  "gold_reconciled": false,
+  "historical_availability_verified": false
+}

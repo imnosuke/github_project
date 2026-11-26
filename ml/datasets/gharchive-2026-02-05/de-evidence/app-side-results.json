@@ -1,0 +1,71 @@
+{
+  "source": "clickhouse",
+  "checked_at": "2026-11-26T10:58:24.874514+00:00",
+  "growth_anchor": "2025-08-17",
+  "passed": true,
+  "publication_load_seconds": 0.852,
+  "publication": {
+    "contract_version": "1.0.0-draft",
+    "data_source": "live",
+    "publication_id": "zz-de-00000000000000000002-06e551e6f3eecb8d3964b7f75073c0a3756797b7127482b7bc9028a8a6adc0a4-d5530af33efe40beb511b7a43f4a598e",
+    "published_at": "2026-11-26T10:58:02Z",
+    "expected_complete_through": null
+  },
+  "reference_metrics": {
+    "passed": true,
+    "checks": {
+      "metrics_match": true,
+      "sixty_complete_days": true,
+      "growth_has_eligible_scope": true
+    },
+    "publication_id": "zz-de-00000000000000000002-06e551e6f3eecb8d3964b7f75073c0a3756797b7127482b7bc9028a8a6adc0a4-d5530af33efe40beb511b7a43f4a598e",
+    "reference_day": "2025-08-17",
+    "growth_anchor": "2025-08-17",
+    "matched_repo_ids": [
+      33884891,
+      204086862,
+      136202695,
+      155220641,
+      45717250,
+      65600975,
+      843222,
+      908607,
+      858127,
+      263727855,
+      166515022,
+      138754790,
+      53548867,
+      60246359,
+      158256479,
+      2211243,
+      17165658,
+      39464018,
+      160919119,
+      90194616
+    ],
+    "mismatched_repo_ids": [],
+    "missing_or_incomplete_days": [],
+    "growth_eligible_repositories": 20,
+    "growth_total_repositories": 20,
+    "validation_seconds": 0.312
+  },
+  "ui": {
+    "overview_totals": {
+      "total_events": 1312,
+      "star_events": 164,
+      "fork_events": 53
+    },
+    "explorer_comparison": "passed",
+    "growth_eligible_repositories": 20,
+    "incomplete_day": "2025-08-18",
+    "render_seconds": {
+      "initial_render": 1.701,
+      "overview": 0.056,
+      "explorer": 0.103,
+      "explorer_change_repository": 0.101,
+      "growth": 0.157,
+      "return_to_overview": 0.056,
+      "incomplete_day": 0.054
+    }
+  }
+}

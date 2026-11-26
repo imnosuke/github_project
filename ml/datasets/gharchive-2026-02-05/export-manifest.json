@@ -1,0 +1,36 @@
+{
+  "source_publication": "gharchive-ml-2025-11-09-2026-02-05-20repos",
+  "start": "2025-11-09",
+  "end": "2026-02-05",
+  "days": 89,
+  "hourly_files": 2136,
+  "repos": 20,
+  "stored_event_rows": 241380,
+  "app02_days": {
+    "provisional": 89
+  },
+  "payload": "metric_and_id_projection_v1",
+  "payload_fields": [
+    "action",
+    "size",
+    "distinct_size",
+    "number",
+    "pull_request.number",
+    "pull_request.merged",
+    "issue.number"
+  ],
+  "metrics_consistency": "verified per repository and UTC day against original payload before export",
+  "snapshot_files": {
+    "repository_daily_metrics.parquet": "e78fe2cff2f37e8ea08e81d1b3d2d2bc862b84b93bdf96970fe6a6458a022729",
+    "daily_data_status.parquet": "750ac3eec80290ebed1e76cdc69a1d9ceb04352b2cae3b48714bb6b3a06451a4",
+    "repository_registry.parquet": "e157a184ce7cb6ba8c117faea03a174b99d3aa45452732a9d319c25ba44b9128",
+    "repository_metadata.parquet": "6c7c29a7765a94e6aeedf2ece1ac9c76abdd2d6a6f750a3afa2709e9b56458d6"
+  },
+  "evaluation_sha256": {
+    "frozen-candidates.json": "1a38d80804eea11edee7ad136824fe009cb8811c42c7297d4d259de3c89a7e53",
+    "holdout-lock.json": "66e2cc726ba029c6d30b979c85ecd9907465f9a85dcf0826d358b565614f31f2",
+    "metrics.json": "9442dbe413b3ae98b8de915395eaa8dcfb5abb09f5908bdee4042ead463e5a74",
+    "predictions.parquet": "6556fa6cc4d5cf18d68161abf42bea109bd11248cccee826381cc00fe40c831d",
+    "samples.parquet": "85ec2b8ee7d20d8620030a918f610656eca28eaa60b301c9d5e3e52967be7593"
+  }
+}
