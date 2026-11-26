@@ -1,4 +1,4 @@
-"""Opt-in model evaluation demo for the fixture source."""
+"""Standalone Streamlit harness for synthetic Forecast evaluation."""
 
 import hashlib
 import json
@@ -10,7 +10,7 @@ import streamlit as st
 
 def render_ml_forecast():
     st.warning("DEMO — Điểm đánh giá từ fixture tổng hợp. Chưa có publication dự đoán.")
-    default_run = Path(__file__).resolve().parents[2] / "ml/runs/github_pc_model"
+    default_run = Path(__file__).resolve().parents[3] / "ml/runs/github_pc_model"
     directory = Path(os.getenv("APP_ML_MODEL_DIR", str(default_run)))
     try:
         report = json.loads((directory / "run.json").read_text(encoding="utf-8"))
@@ -25,3 +25,6 @@ def render_ml_forecast():
         st.metric("MAE holdout trên fixture", f"{test[selected]['mae']:.2f}")
     except (OSError, ValueError, KeyError, TypeError):
         st.info("Chưa có báo cáo fixture hợp lệ tại APP_ML_MODEL_DIR.")
+
+
+render_ml_forecast()

@@ -50,10 +50,7 @@ def main():
         st.info("Snapshot tĩnh từ GH Archive · Số liệu theo repo và ngày trong đợt trích xuất.")
     with st.sidebar:
         st.header("Điều hướng")
-        pages = ["Overview", "Repository Explorer", "Growth Analytics"]
-        if source == "fixture" and os.getenv("APP_ENABLE_ML_FORECAST_DEMO") == "1":
-            pages.append("ML Forecast Demo")
-        page = st.radio("Trang", pages, key="page")
+        page = st.radio("Trang", ["Overview", "Repository Explorer", "Growth Analytics"], key="page")
         st.divider()
         st.caption(f"Nguồn: {envelope['data_source']}")
         st.caption(f"Publication: {envelope['publication_id']}")
@@ -117,12 +114,8 @@ def main():
         render_overview(adapter, start, end)
     elif page == "Repository Explorer":
         render_explorer(adapter, start, end)
-    elif page == "Growth Analytics":
-        render_growth(adapter, start, end)
     else:
-        from apps.streamlit.ml_view import render_ml_forecast
-
-        render_ml_forecast()
+        render_growth(adapter, start, end)
 
 
 main()
