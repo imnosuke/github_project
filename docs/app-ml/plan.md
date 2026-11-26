@@ -259,11 +259,14 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### APP-11 — Kiểm thử tích hợp, tài liệu và demo
 
-- [ ] Kiểm tra các user flows chính trên fixture và nguồn thật.
-- [ ] Kiểm tra metric correctness, query latency thực tế và xử lý lỗi quan trọng.
-- [ ] Viết hướng dẫn chạy, biến môi trường mẫu, data contract, metric definitions và ML limitations.
-- [ ] Viết demo script đi từ repository detail → growth → prediction nếu đủ điều kiện.
-- [ ] Ghi rõ tính năng đã nghiệm thu, tính năng demo và phần chưa hoàn thành.
+**Trạng thái:** đã nghiệm thu tự động trên fixture và ClickHouse local. Xem [lệnh chạy lại, bằng chứng và điều kiện bắt đầu phần còn mở](APP-11-acceptance.md).
+
+- [x] Kiểm tra Overview, Repository Explorer và Growth Analytics trên fixture và publication GH Archive phát lại qua ClickHouse local.
+- [x] Đối soát event/star/fork, đo thời gian đọc local, kiểm tra ngày provisional và lỗi mất kết nối.
+- [x] Viết hướng dẫn chạy và demo MVP, liên kết data contract và ghi rõ giới hạn của phần dự đoán.
+- [ ] Người nhận chạy lại trên máy của họ và ghi kết quả bàn giao.
+- [ ] Nghiệm thu trên Gold staging của DE, gồm đối soát, đo latency và xác nhận freshness theo SLA.
+- [ ] Mở rộng demo với dự đoán khi ML-04 đủ điều kiện.
 
 **Đầu ra:** bản local tái lập, tài liệu và demo.
 
