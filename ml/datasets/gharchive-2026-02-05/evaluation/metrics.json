@@ -1,0 +1,575 @@
+{
+  "mode": "retrospective_event_time",
+  "status": "completed",
+  "holdout_lock_sha256": "66e2cc726ba029c6d30b979c85ecd9907465f9a85dcf0826d358b565614f31f2",
+  "gold_reconciled": false,
+  "historical_availability_verified": false,
+  "score": {
+    "persistence": {
+      "mae": 28.06833333333333,
+      "rmse": 39.8792970516449,
+      "macro_mae": 28.068333333333335,
+      "rows": 600,
+      "repositories": 20,
+      "zero_label_fraction": 0.0,
+      "by_anchor": {
+        "2025-12-08": {
+          "mae": 21.35,
+          "rmse": 28.205495918348962,
+          "macro_mae": 21.35,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-09": {
+          "mae": 22.05,
+          "rmse": 31.93352470367153,
+          "macro_mae": 22.05,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-10": {
+          "mae": 25.8,
+          "rmse": 38.41874542459709,
+          "macro_mae": 25.8,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-11": {
+          "mae": 24.6,
+          "rmse": 36.01943919607855,
+          "macro_mae": 24.6,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-12": {
+          "mae": 24.9,
+          "rmse": 35.82178108358098,
+          "macro_mae": 24.9,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-13": {
+          "mae": 26.2,
+          "rmse": 36.04302983934619,
+          "macro_mae": 26.2,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-14": {
+          "mae": 26.95,
+          "rmse": 37.97301673557159,
+          "macro_mae": 26.95,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-15": {
+          "mae": 27.6,
+          "rmse": 39.61565347182853,
+          "macro_mae": 27.6,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-16": {
+          "mae": 27.6,
+          "rmse": 38.40052082980125,
+          "macro_mae": 27.6,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-17": {
+          "mae": 27.55,
+          "rmse": 38.2119091383825,
+          "macro_mae": 27.55,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-18": {
+          "mae": 28.95,
+          "rmse": 37.94667310845577,
+          "macro_mae": 28.95,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-19": {
+          "mae": 29.65,
+          "rmse": 39.66925761846319,
+          "macro_mae": 29.65,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-20": {
+          "mae": 31.85,
+          "rmse": 43.07609545908264,
+          "macro_mae": 31.85,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-21": {
+          "mae": 31.2,
+          "rmse": 42.925516886812204,
+          "macro_mae": 31.2,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-22": {
+          "mae": 25.9,
+          "rmse": 38.640652168409375,
+          "macro_mae": 25.9,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-23": {
+          "mae": 28.6,
+          "rmse": 41.32069699315345,
+          "macro_mae": 28.6,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-24": {
+          "mae": 28.5,
+          "rmse": 40.65218321320516,
+          "macro_mae": 28.5,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-25": {
+          "mae": 27.2,
+          "rmse": 39.66106403010388,
+          "macro_mae": 27.2,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-26": {
+          "mae": 25.7,
+          "rmse": 39.277219860881196,
+          "macro_mae": 25.7,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-27": {
+          "mae": 27.25,
+          "rmse": 40.121689894619344,
+          "macro_mae": 27.25,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-28": {
+          "mae": 26.6,
+          "rmse": 39.52214569073901,
+          "macro_mae": 26.6,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-29": {
+          "mae": 26.15,
+          "rmse": 37.88997228819256,
+          "macro_mae": 26.15,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-30": {
+          "mae": 29.65,
+          "rmse": 40.06432328144331,
+          "macro_mae": 29.65,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-31": {
+          "mae": 29.75,
+          "rmse": 40.655257962531735,
+          "macro_mae": 29.75,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-01": {
+          "mae": 29.9,
+          "rmse": 40.69643719049618,
+          "macro_mae": 29.9,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-02": {
+          "mae": 31.15,
+          "rmse": 42.912119500206465,
+          "macro_mae": 31.15,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-03": {
+          "mae": 31.0,
+          "rmse": 46.8412211625615,
+          "macro_mae": 31.0,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-04": {
+          "mae": 32.45,
+          "rmse": 47.66917242831052,
+          "macro_mae": 32.45,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-05": {
+          "mae": 30.35,
+          "rmse": 42.7638866334668,
+          "macro_mae": 30.35,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-06": {
+          "mae": 35.65,
+          "rmse": 47.48526087113769,
+          "macro_mae": 35.65,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        }
+      },
+      "by_activity": {
+        "zero": null,
+        "nonzero": {
+          "mae": 28.06833333333333,
+          "rmse": 39.8792970516449,
+          "macro_mae": 28.068333333333335,
+          "rows": 600,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        }
+      },
+      "by_seen_repository": {
+        "seen": {
+          "mae": 28.06833333333333,
+          "rmse": 39.8792970516449,
+          "macro_mae": 28.068333333333335,
+          "rows": 600,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "unseen": null
+      },
+      "anchors_every_30d": {
+        "mae": 21.35,
+        "rmse": 28.205495918348962,
+        "macro_mae": 21.35,
+        "rows": 20,
+        "repositories": 20,
+        "zero_label_fraction": 0.0
+      },
+      "sensitivity_calendar_origin": "1970-01-01"
+    },
+    "ridge": {
+      "mae": 53.78838470210628,
+      "rmse": 75.57239816989207,
+      "macro_mae": 53.788384702106285,
+      "rows": 600,
+      "repositories": 20,
+      "zero_label_fraction": 0.0,
+      "by_anchor": {
+        "2025-12-08": {
+          "mae": 42.722404455294736,
+          "rmse": 65.24764343778835,
+          "macro_mae": 42.722404455294736,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-09": {
+          "mae": 42.9250599712352,
+          "rmse": 67.11256589673575,
+          "macro_mae": 42.9250599712352,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-10": {
+          "mae": 50.17981441228669,
+          "rmse": 75.11891287543475,
+          "macro_mae": 50.17981441228669,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-11": {
+          "mae": 43.11440199642501,
+          "rmse": 66.59355852097946,
+          "macro_mae": 43.11440199642501,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-12": {
+          "mae": 47.70451569224524,
+          "rmse": 67.76559790630608,
+          "macro_mae": 47.70451569224524,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-13": {
+          "mae": 44.242294346725345,
+          "rmse": 65.28538034137783,
+          "macro_mae": 44.242294346725345,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-14": {
+          "mae": 47.92623232836024,
+          "rmse": 71.92511564674668,
+          "macro_mae": 47.92623232836024,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-15": {
+          "mae": 48.880852609941805,
+          "rmse": 73.53844278878515,
+          "macro_mae": 48.880852609941805,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-16": {
+          "mae": 51.65707179540639,
+          "rmse": 76.8013589317809,
+          "macro_mae": 51.65707179540639,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-17": {
+          "mae": 50.31956017732217,
+          "rmse": 78.4743030838286,
+          "macro_mae": 50.31956017732217,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-18": {
+          "mae": 56.462040889624156,
+          "rmse": 80.02089289138522,
+          "macro_mae": 56.462040889624156,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-19": {
+          "mae": 55.431375334218146,
+          "rmse": 81.14587193867574,
+          "macro_mae": 55.431375334218146,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-20": {
+          "mae": 60.83841273801497,
+          "rmse": 88.14126510179486,
+          "macro_mae": 60.83841273801497,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-21": {
+          "mae": 62.815358207049634,
+          "rmse": 85.54392671277367,
+          "macro_mae": 62.815358207049634,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-22": {
+          "mae": 60.788653033764625,
+          "rmse": 84.71218524062022,
+          "macro_mae": 60.788653033764625,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-23": {
+          "mae": 56.23890506163043,
+          "rmse": 76.36409228465912,
+          "macro_mae": 56.23890506163043,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-24": {
+          "mae": 58.15072160140346,
+          "rmse": 81.13139011999937,
+          "macro_mae": 58.15072160140346,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-25": {
+          "mae": 56.26873431179514,
+          "rmse": 81.38977929114051,
+          "macro_mae": 56.26873431179514,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-26": {
+          "mae": 58.54322110301514,
+          "rmse": 82.7412312031476,
+          "macro_mae": 58.54322110301514,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-27": {
+          "mae": 58.08458320530474,
+          "rmse": 83.51662626628966,
+          "macro_mae": 58.08458320530474,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-28": {
+          "mae": 57.59383123894236,
+          "rmse": 85.29007761089504,
+          "macro_mae": 57.59383123894236,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-29": {
+          "mae": 52.937082558288374,
+          "rmse": 74.59388882252009,
+          "macro_mae": 52.937082558288374,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-30": {
+          "mae": 51.99155001538311,
+          "rmse": 64.77984848082549,
+          "macro_mae": 51.99155001538311,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2025-12-31": {
+          "mae": 53.07223481629889,
+          "rmse": 66.48265699950771,
+          "macro_mae": 53.07223481629889,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-01": {
+          "mae": 51.236011361805296,
+          "rmse": 63.601711273391174,
+          "macro_mae": 51.236011361805296,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-02": {
+          "mae": 51.964134106708705,
+          "rmse": 64.5824525143903,
+          "macro_mae": 51.964134106708705,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-03": {
+          "mae": 56.0394050756968,
+          "rmse": 70.07151988515561,
+          "macro_mae": 56.0394050756968,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-04": {
+          "mae": 59.63249288442462,
+          "rmse": 73.2205603925585,
+          "macro_mae": 59.63249288442462,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-05": {
+          "mae": 61.393313951895735,
+          "rmse": 76.42585829122528,
+          "macro_mae": 61.393313951895735,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "2026-01-06": {
+          "mae": 64.49727178268112,
+          "rmse": 84.32848124328025,
+          "macro_mae": 64.49727178268112,
+          "rows": 20,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        }
+      },
+      "by_activity": {
+        "zero": null,
+        "nonzero": {
+          "mae": 53.78838470210628,
+          "rmse": 75.57239816989207,
+          "macro_mae": 53.788384702106285,
+          "rows": 600,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        }
+      },
+      "by_seen_repository": {
+        "seen": {
+          "mae": 53.78838470210628,
+          "rmse": 75.57239816989207,
+          "macro_mae": 53.788384702106285,
+          "rows": 600,
+          "repositories": 20,
+          "zero_label_fraction": 0.0
+        },
+        "unseen": null
+      },
+      "anchors_every_30d": {
+        "mae": 42.722404455294736,
+        "rmse": 65.24764343778835,
+        "macro_mae": 42.722404455294736,
+        "rows": 20,
+        "repositories": 20,
+        "zero_label_fraction": 0.0
+      },
+      "sensitivity_calendar_origin": "1970-01-01"
+    }
+  },
+  "ridge_mae_delta_vs_persistence": 25.720051368772946,
+  "ridge_relative_mae_improvement": -0.9163369646258398,
+  "persisted_candidate_baseline": "persistence",
+  "predictions_sha256": "6556fa6cc4d5cf18d68161abf42bea109bd11248cccee826381cc00fe40c831d"
+}

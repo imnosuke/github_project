@@ -213,7 +213,9 @@ python airflow/scripts/gharchive_extractor.py --date 2025-01-15 --hour 14 --max-
 
 #### Dữ liệu backfill ML-03 cho DE
 
-Bản xuất mới nhất trên GitHub có dữ liệu từ **01/01 đến 16/11/2025 UTC** cho 20 repo. Trong 320 ngày lịch, 282 ngày đạt kiểm tra chất lượng. Xem manifest để biết độ phủ và lý do của từng ngày chưa đạt. [Chỉ mục dữ liệu ML-03](https://github.com/imnosuke/github_project/blob/feature/ml-gharchive-backfill-checkpoints/ml/datasets/README.md)
+Bản xuất holdout mới có **89 ngày, 2.136 giờ** cho 20 repo từ **09/11/2025 đến 05/02/2026 UTC**. Snapshot, checkpoint theo giờ, kết quả ML-03 và bằng chứng nghiệm thu pipeline nằm trong [bộ dữ liệu holdout](ml/datasets/gharchive-2026-02-05/README.md).
+
+Bản xuất lịch sử từ **01/01 đến 16/11/2025 UTC** nằm trên nhánh dữ liệu. Trong 320 ngày lịch, 282 ngày đạt kiểm tra chất lượng. [Chỉ mục dữ liệu lịch sử](https://github.com/imnosuke/github_project/blob/feature/ml-gharchive-backfill-checkpoints/ml/datasets/README.md)
 
 - Dùng `snapshot/manifest.json` và các bảng Parquet trong `snapshot/` để kiểm tra nguồn, checksum, metrics và trạng thái từng ngày trước khi audit ML-03.
 - Dùng `days/` và `scope.json` để tiếp tục backfill bằng collector tương thích với checkpoint. Giữ các cặp Parquet/checksum theo giờ và GitHub repo ID.

@@ -1,0 +1,24 @@
+{
+  "runs": [
+    {
+      "run_id": "manual__2025-01-16T00:00:00+00:00",
+      "state": "success",
+      "hours": 24,
+      "gold": [
+        "33884891\t299\t16\t8",
+        "39464018\t217\t17\t11"
+      ]
+    },
+    {
+      "run_id": "manual__2025-01-16T01:00:00+00:00",
+      "state": "success",
+      "hours": 24,
+      "gold": [
+        "33884891\t299\t16\t8",
+        "39464018\t217\t17\t11"
+      ]
+    }
+  ],
+  "missing_run_state": "failed",
+  "missing_run_preserved_publications": true
+}
