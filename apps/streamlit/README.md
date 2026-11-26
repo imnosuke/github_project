@@ -71,3 +71,15 @@ và `.env.example` trong thư mục này. Export biến môi trường trước 
 file mẫu không tự được load. `APP_DATA_SOURCE=clickhouse` hiện báo lỗi rõ ràng
 sau khi validate cấu hình: chưa có live adapter, không fallback sang demo.
 Không commit mật khẩu; live cần DE xác nhận contract và cấp tài khoản chỉ đọc.
+
+## Kiểm thử Forecast với fixture
+
+Chạy bộ kiểm thử bằng `python -m pytest apps/streamlit/tests/test_forecast_fixture.py -q`.
+Để mở riêng trang kiểm thử, chạy:
+
+```powershell
+$env:APP_ML_MODEL_DIR = (Resolve-Path 'ml/runs/github_pc_model').Path
+python -m streamlit run apps/streamlit/tests/forecast_fixture_app.py
+```
+
+`APP_ML_MODEL_DIR` trỏ tới lần train fixture đã hoàn tất. Trang kiểm thử kiểm tra loại nguồn và checksum trước khi hiển thị kết quả đánh giá synthetic. Trang này có entry point riêng, ngoài điều hướng ứng dụng chính. Dự đoán thật sẽ đọc publication batch theo [dự thảo ML-04](../../docs/app-ml/ML-04-prediction-contract-draft.md).
