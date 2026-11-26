@@ -126,7 +126,7 @@ def render_explorer(adapter: DataAdapter, start, end):
     others = [value for value in labels if value != rid]
     if not others:
         st.info("Cần ít nhất hai repositories trong bộ lọc để so sánh.")
-        return
+        return rid
     other = st.selectbox("So sánh với", others, format_func=labels.get, key="compare_repo")
     other_rows = prepared_series(adapter, other, start, end)
     other_totals = summary(other_rows, start, end)
@@ -166,3 +166,4 @@ def render_explorer(adapter: DataAdapter, start, end):
         width="stretch"
     )
     st.caption("Star events không phải net stars. Bot events nằm trong event counts; contributor metrics chưa được cung cấp.")
+    return rid

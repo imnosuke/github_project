@@ -141,9 +141,17 @@ def main():
     if page == "Overview":
         render_overview(adapter, start, end)
     elif page == "Repository Explorer":
-        render_explorer(adapter, start, end)
+        repository_id = render_explorer(adapter, start, end)
+        if source == "clickhouse" and os.getenv("APP_ENABLE_PREDICTIONS") == "1" and repository_id is not None:
+            from apps.streamlit.predictions import render_predictions
+
+            render_predictions(adapter, end, repository_id)
     else:
         render_growth(adapter, start, end)
+        if source == "clickhouse" and os.getenv("APP_ENABLE_PREDICTIONS") == "1":
+            from apps.streamlit.predictions import render_predictions
+
+            render_predictions(adapter, end)
 
 
 main()
