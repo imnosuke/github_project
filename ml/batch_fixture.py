@@ -17,6 +17,21 @@ from ml.spec import HORIZON_DAYS, SPEC_VERSION, sample_window
 from ml.training import predict
 
 
+def prediction_rows(data, model, anchor):
+    for repo_id in sorted(data.scope):
+        if not data.in_scope(repo_id, anchor.isoformat()):
+            continue
+        try:
+            features = feature_row(data, repo_id, anchor)
+        except Ineligible as exc:
+            status = "insufficient_history" if str(exc) in {"out_of_scope", "insufficient_history"} else "incomplete_features"
+            value = None
+        else:
+            status = "ready"
+            value = float(predict(model, pd.DataFrame([features]))[0])
+        yield {"repository_id": repo_id, "status": status, "predicted_star_events": value}
+
+
 def load_fixture_model(directory):
     report = json.loads((directory / "run.json").read_text(encoding="utf8"))
     model_bytes = (directory / "model.json").read_bytes()
@@ -60,22 +75,9 @@ def publish_fixture(data, model_id, model, anchor, decision_at, output):
     if destination.exists():
         return existing()
     generated = now.isoformat().replace("+00:00", "Z")
-    rows = []
-    for repo_id in sorted(data.scope):
-        if not data.in_scope(repo_id, anchor_key):
-            continue
-        try:
-            features = feature_row(data, repo_id, anchor)
-        except Ineligible as exc:
-            status = "insufficient_history" if str(exc) in {"out_of_scope", "insufficient_history"} else "incomplete_features"
-            value = None
-        else:
-            status = "ready"
-            value = float(predict(model, pd.DataFrame([features]))[0])
-        rows.append({**key, "prediction_publication_id": batch_id, "repository_id": repo_id,
-                     "horizon_days": HORIZON_DAYS, "decision_at": decision.isoformat().replace("+00:00", "Z"),
-                     "generated_at": generated,
-                     "status": status, "predicted_star_events": value})
+    rows = [{**key, **row, "prediction_publication_id": batch_id, "horizon_days": HORIZON_DAYS,
+             "decision_at": decision.isoformat().replace("+00:00", "Z"), "generated_at": generated}
+            for row in prediction_rows(data, model, anchor)]
     if not rows:
         raise ValueError("No repositories were active at the anchor")
     report = {"data_source": "fixture", "key": key, "publication_id": batch_id, "generated_at": generated,

@@ -37,3 +37,13 @@ Producer công bố danh sách repo thuộc scope của anchor, kết quả cho 
 Dùng `python -m ml.batch_fixture --fixture PATH --run MODEL_RUN_DIR --anchor YYYY-MM-DD --decision-at UTC_TIMESTAMP --output PATH` với lần train fixture có `run.json` và `model.json`. Batch kiểm tra loại nguồn, schema feature và checksum của model. File JSON đã commit có ID ổn định theo khóa batch. Retry trả lại kết quả đã commit. Lỗi ghi hoặc công bố giữ nguyên các file đã commit trước đó. Batch fixture nằm ngoài luồng serving.
 
 Để khóa holdout ML-03, dùng `python -m ml.holdout_plan --coverage-start DATE --complete-through DATE --publication-id ID --output FILE` sau khi xác minh coverage liền mạch. Công cụ chỉ dùng metadata độ phủ. Holdout đã chấm gần nhất kết thúc ở anchor `2026-01-06` với nhãn đến `2026-02-05`. Một cửa sổ hồi cứu kế tiếp bắt đầu sớm nhất ở anchor `2026-03-07` và cần dữ liệu hoàn chỉnh đến `2026-05-05` UTC. Nghiệm thu theo thời điểm dự đoán còn cần bằng chứng availability tương ứng. Chỉ ghi file khóa khi đủ độ phủ.
+
+## Luồng ClickHouse sau khi model được nghiệm thu
+
+Chạy [DDL ML-04](ml-04-serving-schema.sql) trong database `app_serving`. Cấp SELECT trên hai bảng prediction cho app reader. Cấp SELECT và INSERT cho tài khoản writer riêng qua `ML04_CLICKHOUSE_*`, với cùng quy ước host, port, TLS và database như `APP_CLICKHOUSE_*`. Dùng một writer tuần tự cho mỗi môi trường.
+
+Lệnh `python -m ml.live_batch --release RELEASE_JSON --model MODEL_JSON --observations PATH --source-name NAME` đọc Gold bằng `APP_CLICKHOUSE_*`. `MODEL_JSON` phải đi kèm `run.json` ghi lượt train đã hoàn thành với nguồn `live`. Release JSON chứa `status: approved`, `release_id`, `approved_at` UTC, `model_sha256`, danh sách `repository_ids` gồm 20 ID, và `ml03_acceptance` với `gold_training_run_sha256` cùng các tham chiếu `gold_reconciliation`, `contract_confirmation`, `prospective_evaluation`. Người duyệt ML-03 xác nhận các tham chiếu từ hồ sơ nghiệm thu trước khi phát hành release. Job kiểm tra checksum của cả model và báo cáo train.
+
+Lệnh ghi nhận lần đọc input thực tế, lấy anchor là ngày UTC trước ngày chạy, tạo kết quả cho registry đã duyệt và ghi manifest sau khi đọc lại đủ rows. Chạy lại cùng release, anchor, model và publication Gold trả cùng publication dự đoán. Mỗi lần thử trước commit dùng staging ID mới. Bản công bố trước đó vẫn đọc được khi lần ghi mới lỗi.
+
+Để bật Explorer và Growth, đặt `APP_ENABLE_PREDICTIONS=1`, `APP_PREDICTION_RELEASE_ID` đúng release ID đã duyệt và `APP_PREDICTION_MAX_AGE_HOURS` theo SLA. UI đọc đúng anchor đang chọn, hiển thị horizon và thời điểm cập nhật. Ngày thiếu batch, repo thiếu feature, lỗi nguồn và batch quá hạn có thông báo riêng. Giá trị dự đoán quá hạn được ẩn.
