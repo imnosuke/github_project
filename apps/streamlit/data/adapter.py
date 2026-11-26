@@ -258,9 +258,9 @@ def get_adapter(source="fixture", directory=None) -> DataAdapter:
             raise ValueError("APP_SNAPSHOT_DIR is required for ClickHouse snapshot data")
         return ClickHouseSnapshotAdapter(directory, ClickHouseConfig.from_env())
     if source == "clickhouse":
+        from .clickhouse_publication import ClickHousePublicationAdapter
         from .config import ClickHouseConfig
-        ClickHouseConfig.from_env()
-        raise NotImplementedError("ClickHouse configuration is valid, but live adapter is not implemented; APP-07 awaits DE contract confirmation")
+        return ClickHousePublicationAdapter(ClickHouseConfig.from_env())
     if source == "snapshot":
         if not directory:
             raise ValueError("APP_SNAPSHOT_DIR is required for snapshot data")

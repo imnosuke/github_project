@@ -2,7 +2,7 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03–06 hoàn tất fixture/local; phần chuẩn bị APP-07 đã merge, suite ứng dụng 44 tests pass; chưa có live adapter/đối soát Gold. **ML-01 hoàn tất thiết kế local**: regression star events 30 ngày, baseline, eligibility và time split có purge được kiểm chứng bằng code. **ML-02 hoàn tất local**: feature builder và train/evaluate CLI đã chạy trên fixture, chưa nghiệm thu khả thi hoặc model trên Gold thật.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03–06 hoàn tất fixture/local; phần chuẩn bị APP-07 đã merge; biên bản triển khai publication và nghiệm thu live được theo dõi ở mục cuối. **ML-01 hoàn tất thiết kế local**: regression star events 30 ngày, baseline, eligibility và time split có purge được kiểm chứng bằng code. **ML-02 hoàn tất local**: feature builder và train/evaluate CLI đã chạy trên fixture, chưa nghiệm thu khả thi hoặc model trên Gold thật.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).
@@ -289,3 +289,10 @@ ML-01/02 có thể làm song song với M2. APP-08/09/10 không bắt buộc ho�
 - [Phạm vi ứng dụng và ML](../02-applications-and-ml.md).
 - [Phối hợp cuốn chiếu](../03-parallel-development.md).
 - [Backlog chung](../04-priority-backlog.md).
+
+## Thứ tự thực hiện sau khi merge pipeline
+
+1. DE chạy staging và bàn giao APP-02 theo [publication Gold](APP-02-data-contract-v1.md#11-phương-án-triển-khai-gold-qua-publication). APP chạy đối soát ngày 2025-01-15 UTC và kiểm tra NULL của chỉ số PR.
+2. APP-07/APP-11 kiểm thử Explorer, Overview và Growth với publication có đủ 60 ngày. Ghi kết quả về scope, metric, freshness, xử lý mất nguồn và thời gian truy vấn. MVP analytics có thể nghiệm thu sau bước này.
+3. ML-03 nhận lịch sử Gold và mốc publication thực. Chốt holdout trước khi fit. Lưu model đã nghiệm thu và phiên bản schema để ML-04 chạy batch và publish. Trong lúc chờ, rà soát khóa rerun, trạng thái thiếu feature và yêu cầu provenance của [ML-04](ML-04-prediction-contract-draft.md).
+4. APP-08 đợi category/ecosystem, APP-09 đợi facts PR/issue/release và actor–repo, APP-10 đợi dữ liệu vận hành gồm lần chạy, coverage theo giờ, lỗi, duration và test results. Xác minh giao diện với fixture trước khi dữ liệu thật được bàn giao.
