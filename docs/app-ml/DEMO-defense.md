@@ -1,5 +1,7 @@
 # Demo đồ án RepoScope
 
+Demo gồm Overview, Repository Explorer, Growth Analytics và dự đoán lượt star 30 ngày bằng ML-03/04. APP-08 (Ecosystem Comparison và Technology Radar) và APP-09 (Repository Health và Contributor Analytics) được giữ trong [backlog mở rộng](plan.md#giai-đoạn-d--analytics-mở-rộng).
+
 ## Chạy demo
 
 Từ thư mục gốc repo, cài `apps/streamlit/requirements.txt` nếu cần rồi chạy:
