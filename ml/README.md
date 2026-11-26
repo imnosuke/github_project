@@ -26,18 +26,13 @@ python -m pytest ml/tests -q
 
 Contract `ML-01` và `ML-03` yêu cầu chuỗi thời gian liên tục tối thiểu **239 ngày** (lookback 30 ngày + train 60 ngày + purge 30 ngày + validation 30 ngày + purge 30 ngày + test 30 ngày + horizon nhãn 30 ngày). Để vừa có dữ liệu sự kiện GitHub thật từ GH Archive (~18.4 MB Parquet) vừa có chuỗi lịch sử 320 ngày cho 150 repositories (~1.1 MB artifacts) với tổng dung lượng **~19.5 MB trên ổ cứng**, thực hiện 3 bước sau:
 
-### Bước 1: Tải ~18.4 MB dữ liệu sự kiện từ GH Archive sang Parquet
-Chạy script `gharchive_extractor.py` với cờ `--max-records 22000` và `--local-only` (tự động xóa file `.json.gz` sau khi nén sang Parquet Snappy):
+### Bước 1: Lấy mẫu trên MinIO
 
 ```bash
-python airflow/scripts/gharchive_extractor.py \
-  --date 2025-01-15 \
-  --hour 14 \
-  --max-records 22000 \
-  --local-only \
-  --output-dir ./airflow/data
+python airflow/scripts/gharchive_extractor.py --date 2025-01-15 --hour 14 --max-records 22000
 ```
-* File đầu ra: `airflow/data/parquet/2025-01-15-14.parquet` (**18.39 MB**, 22.000 events).
+
+CLI ghi dưới prefix `samples/gharchive/`. Nếu cần gộp mẫu vào fixture ở bước 2, tải Parquet từ MinIO về `./airflow/data/parquet`. Dùng lịch sử có coverage và nguồn đã xác minh cho đánh giá ML-03.
 
 ### Bước 2: Tạo bộ dữ liệu huấn luyện chuẩn Contract v1 (150 Repos × 320 Ngày)
 Kết hợp dữ liệu Parquet vừa tải tại `./airflow/data/parquet` vào chuỗi lịch sử 320 ngày của 150 repositories:

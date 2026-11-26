@@ -83,7 +83,7 @@ def label_summary(frame):
             "p90": float(values.quantile(0.9)), "max": int(values.max())}
 
 
-def readiness_report(data, config, days, split):
+def readiness_report(data, config, days, split, *, dataset=None):
     """Return JSON-ready report plus diagnostic frames, from validated Inputs.
 
     Anchor minima count distinct eligible dates globally, never row counts.
@@ -98,7 +98,9 @@ def readiness_report(data, config, days, split):
                               "tracked_repositories": len(tracked), "observed_repo_rows": observed,
                               "missing_repo_rows": len(tracked) - observed})
     coverage = pd.DataFrame(coverage_rows)
-    samples, audit = build_dataset(data, days["anchor_start"], days["anchor_end"], split)
+    if dataset is None:
+        dataset = build_dataset(data, days["anchor_start"], days["anchor_end"], split)
+    samples, audit = dataset
     split_summaries = {}
     for name, minimum in MIN_ANCHORS.items():
         frame = samples[samples.split == name]
@@ -165,8 +167,10 @@ def readiness_report(data, config, days, split):
         "blockers": [*structural_blockers, *([] if source_status == "passed" else ["real_data_source"]),
                      *EXTERNAL_EVIDENCE],
     })
-    if source_status != "passed":
+    if data.publication["data_source"] == "fixture":
         report["limitations"].insert(0, "SYNTHETIC FIXTURE: structural checks only, never real ML-03 readiness.")
+    elif data.publication["data_source"] == "snapshot":
+        report["limitations"].insert(0, "RETROSPECTIVE SNAPSHOT: real events, with Gold reconciliation and historical availability unverified.")
     return report, {"coverage": coverage, "repository_coverage": repositories, "eligibility": audit}
 
 
@@ -198,7 +202,7 @@ def markdown_report(report):
     lines += [f"- **{name}** (unverified): {gate['required_evidence']}" for name, gate in report["external_gates"].items()]
     lines += ["", "## Next steps", "",
               "- Review missing coverage and anchor shortfalls with DE before fixing the evaluation boundaries.",
-              "- Complete APP-07 and reconcile Gold; fixtures cannot satisfy the real-data gate.",
+              "- Complete APP-07 and reconcile live Gold. Fixtures and retrospective snapshots do not satisfy this gate.",
               "- Record contract confirmation and availability evidence; this command does not verify them."]
     lines += ["", "## Limits", ""] + [f"- {item}" for item in report["limitations"]]
     return "\n".join(lines) + "\n"

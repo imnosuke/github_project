@@ -20,6 +20,7 @@ from ml.readiness import input_error_report, markdown_report, readiness_report
 
 ARTIFACT_VERSION = 1
 WARNING = "SYNTHETIC FIXTURE — smoke test only; metrics do not measure real model quality. Retrospective event-time, not historical availability."
+SNAPSHOT_WARNING = "RETROSPECTIVE SNAPSHOT: real events; Gold reconciliation and historical availability are unverified."
 
 
 def dump(path, value):
@@ -55,8 +56,10 @@ def new_output(path):
 
 def build(args):
     config, days, split = read_config(args.config)
-    data = Inputs.from_adapter(get_adapter(directory=args.fixture_dir))
+    source = "snapshot" if args.snapshot_dir else "fixture"
+    data = Inputs.from_adapter(get_adapter(source=source, directory=args.snapshot_dir or args.fixture_dir))
     samples, audit = build_dataset(data, days["anchor_start"], days["anchor_end"], split, args.features_only)
+    warning = SNAPSHOT_WARNING if source == "snapshot" else WARNING
     output = new_output(args.output)
     samples.to_parquet(output / "samples.parquet", index=False)
     audit.to_parquet(output / "audit.parquet", index=False)
@@ -65,12 +68,15 @@ def build(args):
                 "mode": "features" if args.features_only else "supervised",
                 "publication": data.publication, "input_fingerprint": data.fingerprint,
                 "input_date_bounds": [data.lower, data.upper],
-                "warning": WARNING, "rows": len(samples), "candidates": len(audit),
+                "warning": warning, "rows": len(samples), "candidates": len(audit),
                 "audit_counts": {str(k): int(v) for k, v in audit.reason.value_counts().items()},
                 "split_rows": {str(k): int(v) for k, v in samples.split.value_counts().items()},
                 "files": {name: digest(output / name) for name in ("samples.parquet", "audit.parquet")}}
+    if source == "snapshot" and not args.features_only:
+        readiness, _ = readiness_report(data, config, days, split, dataset=(samples, audit))
+        manifest["data_gates"] = readiness["data_gates"]
     dump(output / "manifest.json", manifest)
-    print(json.dumps({"output": str(output), "rows": len(samples), "audit_counts": manifest["audit_counts"], "warning": WARNING}))
+    print(json.dumps({"output": str(output), "rows": len(samples), "audit_counts": manifest["audit_counts"], "warning": warning}))
 
 
 def load_dataset(path):
@@ -105,9 +111,19 @@ def train(args):
     samples, manifest = load_dataset(args.dataset)
     if config != manifest["config"]:
         raise ValueError("Training config must match the dataset config")
-    report, model, predictions = train_and_evaluate(samples, config["ridge_alpha"])
+    is_snapshot = manifest["publication"]["data_source"] == "snapshot"
+    warning = SNAPSHOT_WARNING if is_snapshot else WARNING
+    gates = manifest.get("data_gates", {})
+    if is_snapshot and not gates:
+        raise ValueError("Snapshot training requires data gates from the build command")
+    blockers = [name for name, gate in gates.items() if gate["status"] != "passed"]
+    if is_snapshot and blockers:
+        report = {"status": "blocked", "reason": "snapshot_data_gates", "blockers": blockers}
+        model = predictions = None
+    else:
+        report, model, predictions = train_and_evaluate(samples, config["ridge_alpha"])
     output = new_output(args.output)
-    report.update({"warning": WARNING, "dataset_sha256": digest(Path(args.dataset) / "manifest.json"),
+    report.update({"warning": warning, "dataset_sha256": digest(Path(args.dataset) / "manifest.json"),
                    "spec_version": SPEC_VERSION, "config": config,
                    "input_fingerprint": manifest["input_fingerprint"],
                    "publication": manifest["publication"], "feature_schema": list(FEATURES),
@@ -120,12 +136,13 @@ def train(args):
         predictions.to_parquet(output / "test_predictions.parquet", index=False)
         report["model_sha256"] = digest(output / "model.json")
     dump(output / "run.json", report)
-    print(json.dumps({"status": report["status"], "output": str(output), "warning": WARNING}))
+    print(json.dumps({"status": report["status"], "output": str(output), "warning": warning}))
     return 0 if report["status"] == "completed" else 2
 
 
 def evaluate_saved(args):
-    samples, _ = load_dataset(args.dataset)
+    samples, manifest = load_dataset(args.dataset)
+    warning = SNAPSHOT_WARNING if manifest["publication"]["data_source"] == "snapshot" else WARNING
     run_path = Path(args.run)
     report = json.loads((run_path / "run.json").read_text())
     if report["status"] != "completed":
@@ -141,18 +158,22 @@ def evaluate_saved(args):
         raise ValueError("Incompatible model schema")
     metrics = evaluate(artifact["model"], samples[samples.split == "test"], report["train_repository_ids"])
     output = new_output(args.output)
-    dump(output / "evaluation.json", {"warning": WARNING, "metrics": metrics,
+    dump(output / "evaluation.json", {"warning": warning, "metrics": metrics,
                                        "dataset_sha256": report["dataset_sha256"], "model_sha256": report["model_sha256"]})
-    print(json.dumps({"output": str(output), "mae": metrics["mae"], "warning": WARNING}))
+    print(json.dumps({"output": str(output), "mae": metrics["mae"], "warning": warning}))
 
 
 def audit_readiness(args):
     config, days, split = read_config(args.config)
     if args.source != "fixture" and args.fixture_dir is not None:
         raise ValueError("--fixture-dir is only valid for --source fixture")
+    if args.source == "snapshot" and not args.snapshot_dir:
+        raise ValueError("--snapshot-dir is required for --source snapshot")
+    if args.source != "snapshot" and args.snapshot_dir is not None:
+        raise ValueError("--snapshot-dir is only valid for --source snapshot")
     frames = {}
     try:
-        data = Inputs.from_adapter(get_adapter(source=args.source, directory=args.fixture_dir))
+        data = Inputs.from_adapter(get_adapter(source=args.source, directory=args.snapshot_dir or args.fixture_dir))
     except (NotImplementedError, OSError) as exc:
         report = input_error_report(config, "source_unavailable", str(exc))
     except (ValueError, KeyError, TypeError) as exc:
@@ -177,12 +198,15 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True)
     builder = commands.add_parser("build")
     builder.add_argument("--config", required=True)
-    builder.add_argument("--fixture-dir")
+    build_source = builder.add_mutually_exclusive_group()
+    build_source.add_argument("--fixture-dir")
+    build_source.add_argument("--snapshot-dir", help="APP-02 snapshot from a retrospective backfill")
     builder.add_argument("--features-only", action="store_true")
     readiness = commands.add_parser("audit", help="Audit data readiness; never train or certify DE approval")
     readiness.add_argument("--config", required=True)
-    readiness.add_argument("--source", choices=["fixture", "clickhouse"], default="fixture")
+    readiness.add_argument("--source", choices=["fixture", "snapshot", "clickhouse"], default="fixture")
     readiness.add_argument("--fixture-dir")
+    readiness.add_argument("--snapshot-dir", help="APP-02 snapshot from a retrospective backfill")
     trainer = commands.add_parser("train")
     trainer.add_argument("--config", required=True)
     trainer.add_argument("--dataset", required=True)

@@ -10,5 +10,8 @@ dbt_gharchive:
       password: "{{ env_var('CLICKHOUSE_PASSWORD', 'clickhouse') }}"
       secure: false
       verify: false
-      threads: 4
+      threads: 2
+      custom_settings:
+        max_bytes_before_external_sort: 1073741824
+        max_threads: 2
 

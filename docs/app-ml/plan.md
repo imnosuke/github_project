@@ -137,6 +137,8 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 **Đã tích hợp thử snapshot GH Archive:** ngày 2025-01-15 UTC cho `apache/airflow` và `apache/superset`. Đã xử lý đủ 24 tệp giờ, giữ 516 sự kiện và đối chiếu tổng event, star event, fork event từ Parquet theo giờ. Cả ba trang Streamlit đọc được snapshot. Khi có Gold live cùng scope, dùng ngày này làm ca đối soát đầu tiên.
 
+**Đã thử đọc Gold cục bộ:** `clickhouse_snapshot` đọc qua HTTP bằng tài khoản chỉ đọc và xác minh các metric theo snapshot một ngày trước khi hiển thị. [Cấu hình và giới hạn](APP-07-adapter-preparation.md#thử-nghiệm-qua-http-trên-máy-local)
+
 - [ ] Thêm adapter nguồn thật theo stack đã chọn; credentials chỉ ở phía server/cấu hình môi trường phù hợp.
 - [ ] Đọc Gold/view đúng contract, query có giới hạn ngày, sort và pagination.
 - [ ] Kiểm tra schema, kiểu dữ liệu, completeness và freshness.
@@ -223,7 +225,9 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### ML-03 — Huấn luyện và đánh giá trên lịch sử thật
 
-**Chuẩn bị local:** đã có [audit readiness](ML-03-readiness-audit.md) cho coverage, eligibility và split shortfalls. Contract APP-02 vẫn chờ DE xác nhận; chưa có Gold audit hoặc training/evaluation thật. Các checklist nghiệm thu dưới đây giữ nguyên chưa hoàn tất.
+**Chuẩn bị local:** đã có [audit readiness](ML-03-readiness-audit.md) cho coverage, eligibility và split shortfalls. Contract APP-02 và audit trên Gold vẫn chờ DE.
+
+**Đánh giá hồi cứu GH Archive:** đã có [kết quả local và hồ sơ kiểm tra độ phủ](ML-03-retrospective-results.md) trên snapshot 20 repo. Nghiệm thu ML-03 trên Gold còn chờ đối soát và bằng chứng về thời điểm dữ liệu khả dụng.
 
 - [ ] Kiểm tra đủ lookback, label horizon và các giai đoạn evaluation.
 - [ ] Train baseline, sau đó thử một model phù hợp; chỉ tune trên train/validation.
@@ -237,6 +241,8 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 **Dependency:** ML-02; DE bàn giao lịch sử complete đủ dài. Fixture không đáp ứng gate này.
 
 #### ML-04 — Batch inference và tích hợp dự đoán
+
+Đã soạn [dự thảo contract dự đoán](ML-04-prediction-contract-draft.md) để review cùng DE.
 
 - [ ] Chốt prediction contract: repo, prediction date, horizon, output, model version, generated time.
 - [ ] Implement inference và cách ghi output; thống nhất orchestration với DE.

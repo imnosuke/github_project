@@ -139,7 +139,7 @@ docker compose ps
      }
      ```
 4. Luồng xử lý tự động đi qua 7 bước:
-   `resolve_target_datetime` $\rightarrow$ `download_from_gharchive` $\rightarrow$ `convert_to_parquet` $\rightarrow$ `upload_to_minio_s3` $\rightarrow$ `load_to_clickhouse_bronze` $\rightarrow$ `dbt_transform_silver_gold` $\rightarrow$ `cleanup_temp_files`.
+   `resolve_target_datetime` → `stream_gharchive_to_minio_s3` → `load_to_clickhouse_bronze` → `dbt_transform_silver_gold`.
 
 ### 5.2. Kiểm tra dữ liệu trên ClickHouse
 Truy cập [http://localhost:8123/play](http://localhost:8123/play) (User: `default`, Password: `clickhouse`) và chạy thử các câu truy vấn:
@@ -201,43 +201,29 @@ LIMIT 10;
 
 Để phục vụ bài toán dự báo số lượng `star_events` trong 30 ngày tiếp theo (**ML-01 / ML-02 / ML-03**) trên máy cá nhân mà không cần tải hàng trăm GB raw GH Archive, dự án cung cấp chế độ trích xuất giới hạn dung lượng (~20 MB ổ cứng) kết hợp bộ tạo dữ liệu chuẩn **Contract v1**.
 
-### Dữ liệu backfill ML-03 cho DE
+### 7.1. Lấy mẫu trên MinIO hoặc dùng snapshot local
 
-Bộ dữ liệu backfill GH Archive được cập nhật trên nhánh `feature/ml-gharchive-backfill-checkpoints`. Trang chỉ mục luôn trỏ tới bản xuất mới nhất. [Mở chỉ mục dữ liệu ML-03](https://github.com/imnosuke/github_project/blob/feature/ml-gharchive-backfill-checkpoints/ml/datasets/README.md)
+Dùng CLI bên dưới cho dữ liệu thăm dò. File ghi dưới `samples/gharchive/` trong MinIO, ngoài đường nạp Bronze. Bộ train demo ở bước sau có thể đọc thư mục Parquet local nếu bạn đã tải mẫu từ MinIO. Dữ liệu demo kết hợp Parquet lấy mẫu với fixture.
 
-- Để kiểm tra hoặc audit ML-03, mở `snapshot/` và đọc `manifest.json` để biết phạm vi ngày UTC, số repo và checksum. `repository_daily_metrics.parquet` chứa metrics theo repo/ngày, còn `daily_data_status.parquet` ghi độ phủ.
-- Để tiếp tục crawl trên máy DE, chuyển `days/` và `scope.json` vào thư mục dữ liệu của collector. Giữ nguyên các cặp Parquet và checkpoint checksum theo giờ cùng danh sách GitHub repo ID.
-- Bản bàn giao ngày 15/05/2025 UTC bao phủ 135 ngày đủ dữ liệu, từ 01/01/2025, cho 20 repo. Đây là dữ liệu hồi cứu trong đợt backfill 320 ngày. ML-03 vẫn cần đạt điều kiện audit trước khi train. [Bản bàn giao 135 ngày](https://github.com/imnosuke/github_project/tree/feature/ml-gharchive-backfill-checkpoints/ml/datasets/gharchive-2025-05-15)
+```bash
+python airflow/scripts/gharchive_extractor.py --date 2025-01-15 --hour 14 --max-records 22000
+```
 
-Nếu đang ở một nhánh khác, có thể tải nhánh dữ liệu vào một thư mục riêng bằng Git.
+Để chạy trên lịch sử đã crawl, dùng [kết quả và snapshot ML-03](docs/app-ml/ML-03-retrospective-results.md).
+
+#### Dữ liệu backfill ML-03 cho DE
+
+Bản xuất mới nhất trên GitHub có dữ liệu từ **01/01 đến 16/11/2025 UTC** cho 20 repo. Trong 320 ngày lịch, 282 ngày đạt kiểm tra chất lượng. Xem manifest để biết độ phủ và lý do của từng ngày chưa đạt. [Chỉ mục dữ liệu ML-03](https://github.com/imnosuke/github_project/blob/feature/ml-gharchive-backfill-checkpoints/ml/datasets/README.md)
+
+- Dùng `snapshot/manifest.json` và các bảng Parquet trong `snapshot/` để kiểm tra nguồn, checksum, metrics và trạng thái từng ngày trước khi audit ML-03.
+- Dùng `days/` và `scope.json` để tiếp tục backfill bằng collector tương thích với checkpoint. Giữ các cặp Parquet/checksum theo giờ và GitHub repo ID.
+
+Mở nhánh dữ liệu trong thư mục riêng:
 
 ```bash
 git fetch origin feature/ml-gharchive-backfill-checkpoints
-git worktree add --detach ../github-project-data FETCH_HEAD
+git worktree add --detach ../github-project-data origin/feature/ml-gharchive-backfill-checkpoints
 ```
-
-### 7.1. Tải dữ liệu thật từ GH Archive về ổ cứng (~18.4 MB Parquet)
-Sử dụng tham số `--max-records 22000` và `--local-only` để tải, giải nén, chuyển sang Parquet nén Snappy và tự động xóa file `.json.gz` tạm:
-
-```bash
-python airflow/scripts/gharchive_extractor.py \
-  --date 2025-01-15 \
-  --hour 14 \
-  --max-records 22000 \
-  --local-only \
-  --output-dir ./airflow/data
-```
-* **Kết quả:** Tạo file `airflow/data/parquet/2025-01-15-14.parquet` chứa **22.000 sự kiện GitHub thật** (~**18.39 MB** trên ổ cứng).
-* Nếu muốn tải nhiều ngày và chỉ lọc 50 repositories phổ biến để nhẹ máy:
-  ```bash
-  python airflow/scripts/gharchive_extractor.py \
-    --date 2025-01-01 \
-    --end-date 2025-01-07 \
-    --hours-step 6 \
-    --filter-default-repos \
-    --local-only \
-    --output-dir ./airflow/data
-  ```
 
 ### 7.2. Tổng hợp Dataset theo chuẩn Contract v1 (150 Repos × 320 Ngày)
 Gộp dữ liệu Parquet GH Archive vừa tải với danh mục 150 repositories trong 320 ngày (vượt ngưỡng tối thiểu 239 ngày của `ML-01` / `ML-03`):

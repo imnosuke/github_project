@@ -1,15 +1,31 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
+        incremental_strategy='delete+insert',
+        unique_key='event_date',
         engine='MergeTree()',
         order_by='(event_date, total_events, repo_id)'
     )
 }}
 
 WITH valid_repo_events AS (
-    SELECT *
+    SELECT *, event_type = 'PullRequestEvent' AND action = 'closed' AS is_pr_close
     FROM {{ ref('stg_gharchive_events') }}
     WHERE repo_id != 0 AND repo_full_name != ''
+    {% if is_incremental() %}
+      {% set target_dates = var('target_dates', '') %}
+      {% if target_dates != '' %}
+        AND event_date IN (
+            {% for d in target_dates.split(',') %}
+              toDate('{{ d.strip() }}'){% if not loop.last %}, {% endif %}
+            {% endfor %}
+        )
+      {% else %}
+        AND event_date >= (
+            SELECT coalesce(max(event_date), toDate('1970-01-01')) FROM {{ this }}
+        )
+      {% endif %}
+    {% endif %}
 )
 
 SELECT
@@ -34,8 +50,16 @@ SELECT
 
     -- Thống kê Pull Requests
     countIf(event_type = 'PullRequestEvent' AND action = 'opened') AS prs_opened,
-    countIf(event_type = 'PullRequestEvent' AND action = 'closed' AND pr_merged = true) AS prs_merged,
-    countIf(event_type = 'PullRequestEvent' AND action = 'closed' AND pr_merged = false) AS prs_closed_unmerged,
+    if(
+        countIf(is_pr_close AND isNull(pr_merged)) = 0,
+        countIf(is_pr_close AND pr_merged = true),
+        NULL
+    ) AS prs_merged,
+    if(
+        countIf(is_pr_close AND isNull(pr_merged)) = 0,
+        countIf(is_pr_close AND pr_merged = false),
+        NULL
+    ) AS prs_closed_unmerged,
 
     -- Thống kê Issues
     countIf(event_type = 'IssuesEvent' AND action = 'opened') AS issues_opened,
