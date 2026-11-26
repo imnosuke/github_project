@@ -1,6 +1,6 @@
-# Application data layer — APP-03
+# RepoScope — Ứng dụng Streamlit
 
-Đã có khung Streamlit local và lớp dữ liệu fixture. Chưa có live ClickHouse adapter. Fixture là dữ liệu tổng hợp, không dùng đánh giá chất lượng ML.
+MVP có Overview, Repository Explorer và Growth Analytics trên fixture hoặc publication ClickHouse theo APP-02. Fixture là dữ liệu tổng hợp, dùng để kiểm thử ứng dụng. Xem [hướng dẫn nghiệm thu và bàn giao APP-11](../../docs/app-ml/APP-11-acceptance.md) để phát lại snapshot GH Archive, kiểm tra giao diện và ghi kết quả đối soát.
 
 Chạy từ thư mục gốc repository trong môi trường Python riêng, không cài vào môi trường Airflow:
 
@@ -26,7 +26,7 @@ series = adapter.time_series(1001, "2026-10-01", "2026-11-01")
 ranking = adapter.growth_ranking("2026-11-01", window=30)
 ```
 
-Có thể truyền `directory=...` để đọc bộ fixture khác. `source="clickhouse"` kiểm tra cấu hình và báo `NotImplementedError` cho tới khi live adapter hoàn thiện. UI đọc `adapter.publication()` để gắn nhãn nguồn dữ liệu.
+Có thể truyền `directory=...` để đọc bộ fixture khác. `source="clickhouse"` kiểm tra cấu hình rồi đọc publication APP-02 đã commit. UI đọc `adapter.publication()` để gắn nhãn nguồn dữ liệu.
 
 ## Fixture
 
@@ -39,7 +39,7 @@ Có thể truyền `directory=...` để đọc bộ fixture khác. `source="cli
 
 Kết quả growth bao gồm các row không hợp lệ kèm `state`, current/delta null, xếp cuối. Consumer phải loại `insufficient_history`/`incomplete_data` khỏi bảng ranking và báo số bị loại. `new_activity` có growth_pct null; `no_activity` có growth_pct zero.
 
-Validator kiểm tra keys, coverage, scope, counts và completeness quan trọng. Đây không phải validator JSON Schema tổng quát cho dữ liệu producer bất kỳ; live adapter cần kiểm tra schema/type và snapshot consistency bổ sung. Manifest là một publication cố định cho cả bộ fixture. Chưa có UI freshness indicator hoặc live publish protocol.
+Validator kiểm tra keys, coverage, scope, counts và completeness. Adapter ClickHouse kiểm tra thêm schema, kiểu và tính nhất quán của publication. UI hiển thị freshness nếu manifest cung cấp `expected_complete_through`.
 
 Contract: [APP-02](../../docs/app-ml/APP-02-data-contract-v1.md).
 
