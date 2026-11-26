@@ -15,7 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from apps.streamlit.data import get_adapter
 from apps.streamlit.explorer import render_explorer
-from apps.streamlit.analytics import render_overview, render_growth
+from apps.streamlit.analytics import default_date_range, render_growth, render_overview
 
 st.set_page_config(page_title="RepoScope · GitHub Analytics", page_icon="📊", layout="wide")
 
@@ -27,17 +27,15 @@ def load_adapter(source, directory, interface_version, connection_key=None):
 
 
 def main():
-    st.title("RepoScope")
-    st.caption("GitHub activity · Repository Explorer · Growth Analytics")
     source = os.getenv("APP_DATA_SOURCE", "fixture")
     pipeline_runs_file = os.getenv("APP_PIPELINE_RUNS_FILE")
     pipeline_fixture = source == "fixture" and os.getenv("APP_ENABLE_PIPELINE_FIXTURE") == "1"
     with st.sidebar:
-        st.header("Điều hướng")
+        st.header("RepoScope")
         pages = ["Overview", "Repository Explorer", "Growth Analytics"]
         if pipeline_runs_file or pipeline_fixture:
             pages.append("Pipeline Health")
-        page = st.radio("Trang", pages, key="page")
+        page = st.radio("Trang", pages, key="page", label_visibility="collapsed")
         st.divider()
 
     if page == "Pipeline Health":
@@ -48,9 +46,11 @@ def main():
         else:
             from apps.streamlit.pipeline_fixture import render_pipeline_fixture
 
+            st.title(page)
             render_pipeline_fixture()
         return
 
+    st.title(page)
     directory = os.getenv("APP_FIXTURE_DIR") or str(Path(__file__).parent / "data" / "fixtures")
     if source in {"snapshot", "clickhouse_snapshot"}:
         directory = os.getenv("APP_SNAPSHOT_DIR")
@@ -59,11 +59,11 @@ def main():
         settings = {key: value for key, value in os.environ.items() if key.startswith("APP_CLICKHOUSE_")}
         connection_key = hashlib.sha256(json.dumps(settings, sort_keys=True).encode("utf8")).hexdigest()
     try:
-        with st.spinner("Đang kiểm tra và tải dữ liệu…"):
+        with st.spinner("Đang tải dữ liệu…"):
             adapter = load_adapter(source, directory, interface_version="app-07-v1", connection_key=connection_key)
             envelope = adapter.publication()
     except Exception as exc:
-        st.error("Không thể tải nguồn dữ liệu. Kiểm tra cấu hình và thư mục dữ liệu.")
+        st.error("Không thể tải nguồn dữ liệu.")
         with st.expander("Chi tiết lỗi"):
             st.code(str(exc))
         if st.button("Thử lại"):
@@ -71,72 +71,51 @@ def main():
             st.rerun()
         return
 
-    if envelope["data_source"] == "fixture":
-        st.warning("DEMO — Dữ liệu tổng hợp, không phải hoạt động GitHub thực tế hoặc kết quả ML.")
-    elif source == "clickhouse_snapshot":
-        st.info("ClickHouse cục bộ · Chỉ số Gold đã đối soát với snapshot GH Archive.")
-    elif envelope["data_source"] == "snapshot":
-        st.info("Snapshot tĩnh từ GH Archive · Số liệu theo repo và ngày trong đợt trích xuất.")
-    with st.sidebar:
-        st.caption(f"Nguồn: {source if source == 'clickhouse_snapshot' else envelope['data_source']}")
-        st.caption(f"Publication: {envelope['publication_id']}")
-        st.caption(f"Công bố (UTC): {envelope['published_at']}")
-        if st.button("Tải lại dữ liệu"):
-            load_adapter.clear()
-            st.rerun()
-
     bounds = adapter.date_bounds()
     if bounds is None:
-        st.info("Nguồn chưa có ngày dữ liệu nào. Hãy kiểm tra thư mục dữ liệu hoặc chờ lần công bố tiếp theo.")
+        st.info("Nguồn chưa có dữ liệu theo ngày.")
         return
     lower, upper = (date.fromisoformat(value) for value in bounds)
     latest = adapter.latest_complete_date()
     expected = envelope.get("expected_complete_through")
     if latest is None:
         st.error("Chưa có ngày nào complete.")
-    elif expected is None:
-        st.info(f"Complete gần nhất: {latest} UTC. Chưa cấu hình kỳ vọng freshness.")
-    elif latest < expected:
-        st.warning(f"Dữ liệu stale: complete gần nhất {latest}, kỳ vọng đến {expected} UTC.")
-    elif envelope["data_source"] == "fixture":
-        st.caption(f"Complete gần nhất: {latest} UTC · Kỳ vọng fixture: {expected}. Freshness này theo manifest demo, không theo ngày hiện tại.")
-    else:
-        st.caption(f"Complete gần nhất: {latest} UTC · Kỳ vọng theo publication: {expected} UTC.")
+    elif expected and latest < expected:
+        st.warning(f"Dữ liệu trễ · Có đến {latest} · Mốc kỳ vọng {expected} UTC")
 
-    start_default = max(lower, (pd.Timestamp(latest or upper) - pd.Timedelta(days=29)).date())
-    end_default = date.fromisoformat(latest) if latest else upper
-    selected = st.sidebar.date_input("Khoảng ngày (UTC)", value=(start_default, end_default),
+    selected = st.sidebar.date_input("Khoảng ngày (UTC)", value=default_date_range(adapter, lower, upper, latest),
                                      min_value=lower, max_value=upper, key="date_range")
+    with st.sidebar.expander("Thông tin nguồn"):
+        st.caption(f"Bản dữ liệu · {envelope['publication_id']}")
+        st.caption(f"Nguồn dữ liệu · {envelope['data_source']}")
+        st.caption(f"Công bố · {envelope['published_at']}")
+        if latest:
+            st.caption(f"Ngày complete gần nhất · {latest} UTC")
+        if st.button("Tải lại dữ liệu"):
+            load_adapter.clear()
+            st.rerun()
+
     if len(selected) != 2:
-        st.info("Chọn đủ ngày bắt đầu và kết thúc để xem nội dung.")
+        st.info("Khoảng ngày chưa đủ.")
         return
     start, end = (d.isoformat() for d in selected)
     if start > end:
         st.error("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.")
         return
-    st.subheader(page)
-    st.caption(f"Bộ lọc dùng chung: {start} → {end}, gồm cả hai đầu ngày UTC.")
+    source_label = {
+        "fixture": "DEMO · Dữ liệu tổng hợp",
+        "snapshot": "GH Archive · Snapshot",
+        "clickhouse_snapshot": "GH Archive · ClickHouse local",
+        "clickhouse": "GitHub · ClickHouse Gold",
+    }[source]
+    date_label = f" · {start} → {end} UTC" if page != "Growth Analytics" else ""
+    st.caption(f"{source_label}{date_label}")
     dates = pd.date_range(start, end).strftime("%Y-%m-%d")
     selected_status = adapter.day_status(start, end)
     unknown = len(set(dates) - set(selected_status.date))
     incomplete = int((selected_status.status != "complete").sum()) + unknown
     if incomplete:
-        st.warning(f"Khoảng đã chọn có {incomplete} ngày thiếu, chưa complete hoặc chưa rõ trạng thái. Không công bố KPI tổng/growth cho toàn kỳ.")
-    with st.expander("Trạng thái dữ liệu trong kỳ", expanded=bool(incomplete)):
-        st.dataframe(
-            selected_status,
-            hide_index=True,
-            width="stretch",
-            column_config={
-                "date": st.column_config.DateColumn("Ngày (UTC)"),
-                "status": st.column_config.TextColumn("Trạng thái"),
-                "expected_files": st.column_config.NumberColumn("File kỳ vọng", format="%d"),
-                "processed_files": st.column_config.NumberColumn("File đã xử lý", format="%d"),
-                "quality_passed": st.column_config.CheckboxColumn("Quality passed"),
-                "published_at": st.column_config.TextColumn("Công bố (UTC)"),
-                "reason": st.column_config.TextColumn("Ghi chú / Lý do"),
-            }
-        )
+        st.warning(f"Khoảng ngày đã chọn · {incomplete} ngày chưa complete")
 
     if page == "Overview":
         render_overview(adapter, start, end)
@@ -153,6 +132,21 @@ def main():
 
             render_predictions(adapter, end)
 
+    with st.expander("Trạng thái dữ liệu theo ngày"):
+        st.dataframe(
+            selected_status,
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "date": st.column_config.DateColumn("Ngày (UTC)"),
+                "status": st.column_config.TextColumn("Trạng thái"),
+                "expected_files": st.column_config.NumberColumn("File kỳ vọng", format="%d"),
+                "processed_files": st.column_config.NumberColumn("File đã xử lý", format="%d"),
+                "quality_passed": st.column_config.CheckboxColumn("Quality passed"),
+                "published_at": st.column_config.TextColumn("Công bố (UTC)"),
+                "reason": st.column_config.TextColumn("Ghi chú / Lý do"),
+            }
+        )
 
 main()
 

@@ -36,7 +36,7 @@ def test_pages_use_only_interface(monkeypatch):
     for page in ['Overview', 'Repository Explorer', 'Growth Analytics']:
         app.sidebar.radio[0].set_value(page).run()
         assert not app.exception
-    assert any('repo hợp lệ' in item.value for item in app.caption)
+    assert any('repo đủ dữ liệu' in item.value for item in app.caption)
 
 
 def test_adapter_result_frames_are_caller_owned():

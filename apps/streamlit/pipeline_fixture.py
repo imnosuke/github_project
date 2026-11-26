@@ -14,7 +14,7 @@ EXPECTED_THROUGH = "2025-01-15"
 
 
 def render_pipeline_fixture():
-    st.warning("Pipeline Health · Dữ liệu vận hành giả lập")
+    st.warning("DEMO · Dữ liệu vận hành giả lập")
     runs = pd.DataFrame(RUNS, columns=["run_id", "day_utc", "attempt", "expected_hours",
                                       "processed_hours", "status"])
     runs["missing_hours"] = runs.expected_hours - runs.processed_hours
@@ -24,8 +24,6 @@ def render_pipeline_fixture():
     st.caption(f"Ngày complete gần nhất: {latest_complete} · Kỳ vọng: {EXPECTED_THROUGH} UTC")
     if complete.empty or complete.max() < EXPECTED_THROUGH:
         st.warning("Publication trễ so với kỳ vọng của fixture.")
-    if latest.status.ne("complete").any():
-        st.info("Một số ngày theo dõi trong fixture còn thiếu kết quả.")
     st.dataframe(latest.sort_values("day_utc", ascending=False), hide_index=True, width="stretch")
     with st.expander("Lịch sử lần chạy và retry"):
         st.dataframe(runs.sort_values(["day_utc", "attempt"], ascending=False), hide_index=True, width="stretch")

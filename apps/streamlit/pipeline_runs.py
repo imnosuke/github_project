@@ -7,16 +7,16 @@ import streamlit as st
 
 
 COLUMNS = {
-    "run_id": "Airflow run ID",
     "state": "Trạng thái DAG",
+    "uploaded_hours": "Giờ đã upload",
+    "expected_hours": "Giờ dự kiến",
+    "missing_hours": "Giờ thiếu",
     "target_start": "Giờ đích đầu (UTC)",
     "target_end": "Giờ đích cuối (UTC)",
+    "run_id": "Airflow run ID",
     "started_at": "Bắt đầu (UTC)",
     "ended_at": "Kết thúc (UTC)",
     "duration_seconds": "Thời lượng (giây)",
-    "expected_hours": "Giờ dự kiến",
-    "uploaded_hours": "Giờ đã upload",
-    "missing_hours": "Giờ thiếu",
     "failed_attempts": "Lần thử lỗi",
     "dbt_state": "Trạng thái dbt",
     "publication_id": "Publication APP-02",
@@ -24,14 +24,15 @@ COLUMNS = {
 
 
 def render_pipeline_runs(path):
-    st.subheader("Pipeline Health")
+    st.title("Pipeline Health")
     try:
         report = json.loads(path.read_text(encoding="utf8"))
         if report["source"] not in {"airflow-local", "airflow-metadata"} or not isinstance(report["runs"], list):
             raise ValueError("Invalid Airflow export")
         runs = pd.DataFrame.from_records(report["runs"], columns=[*COLUMNS, "missing_target_hours"])
-        missing_counts = pd.to_numeric(runs.missing_hours, errors="raise")
-        missing = runs.loc[missing_counts.fillna(0).gt(0), ["run_id", "missing_target_hours"]]
+        for field in ("uploaded_hours", "expected_hours", "missing_hours"):
+            runs[field] = pd.to_numeric(runs[field], errors="raise").astype("Int64")
+        missing = runs.loc[runs.missing_hours.gt(0).fillna(False), ["run_id", "missing_target_hours"]]
         task_rows = [
             {"Airflow run ID": run["run_id"], "Task": task["task_id"], "Trạng thái": task["state"]}
             for run in report["runs"] for task in run["task_states"]
@@ -41,15 +42,24 @@ def render_pipeline_runs(path):
                     for run in report["runs"] for task in run.get("failure_details", [])]
         exported_at = report["exported_at"]
     except (OSError, ValueError, KeyError, TypeError):
-        st.error("Không đọc được bản xuất Airflow. Kiểm tra APP_PIPELINE_RUNS_FILE hoặc xuất lại từ metadata SQLite.")
+        st.error("Không đọc được bản xuất Airflow.")
         return
 
     source = "Airflow cục bộ" if report["source"] == "airflow-local" else "Metadata Airflow"
-    st.caption(f"{source} · Xuất lúc {exported_at}")
+    st.caption(f"{source} · {exported_at}")
     if runs.empty:
         st.info("Chưa có lần chạy GH Archive trong bản xuất.")
         return
-    st.caption("Các cột giờ dựa trên kết quả upload MinIO. Ô trống biểu thị Airflow chưa ghi nhận kết quả. Mỗi lần chạy lại có run ID riêng.")
+    latest = runs.iloc[0]
+    state_labels = {"success": "Thành công", "failed": "Thất bại", "running": "Đang chạy", "queued": "Đang chờ"}
+    status_col, uploaded_col, missing_col = st.columns(3)
+    state = str(latest.state) if pd.notna(latest.state) else "—"
+    status_col.metric("Lần chạy gần nhất", state_labels.get(state, state), border=True)
+    uploaded = "—" if pd.isna(latest.uploaded_hours) else str(int(latest.uploaded_hours))
+    expected = "—" if pd.isna(latest.expected_hours) else str(int(latest.expected_hours))
+    uploaded_col.metric("Giờ đã tải / dự kiến", f"{uploaded} / {expected}", border=True)
+    missing_col.metric("Giờ thiếu", "—" if pd.isna(latest.missing_hours) else str(int(latest.missing_hours)), border=True)
+    st.subheader("Lịch sử chạy")
     st.dataframe(runs[list(COLUMNS)].rename(columns=COLUMNS), hide_index=True, width="stretch")
     if not missing.empty:
         with st.expander("Giờ chưa có trong kết quả upload"):
