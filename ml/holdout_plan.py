@@ -9,7 +9,7 @@ from ml.publication_files import commit_exclusive
 from ml.spec import HORIZON_DAYS, LOOKBACK_DAYS, sample_window
 
 
-LAST_SCORED_ANCHOR = date(2025, 10, 9)
+LAST_SCORED_ANCHOR = date(2026, 1, 6)
 HOLDOUT_DAYS = 30
 
 

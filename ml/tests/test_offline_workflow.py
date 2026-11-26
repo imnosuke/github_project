@@ -14,21 +14,22 @@ from ml.spec import SPEC_VERSION
 
 
 def test_holdout_starts_after_the_previous_evaluation_inputs():
-    earliest = plan_holdout(date(2025, 11, 9), date(2025, 11, 16), "current")
+    earliest = plan_holdout(date(2025, 11, 9), date(2026, 2, 5), "current")
     assert earliest["status"] == "blocked"
-    assert earliest["first_anchor"] == "2025-12-08"
-    assert earliest["required_complete_through"] == "2026-02-05"
-    assert plan_holdout(date(2025, 11, 9), date(2026, 2, 5), "new")["status"] == "ready"
+    assert earliest["last_seen_event_date"] == "2026-02-05"
+    assert earliest["first_anchor"] == "2026-03-07"
+    assert earliest["required_complete_through"] == "2026-05-05"
+    assert plan_holdout(date(2026, 2, 6), date(2026, 5, 5), "new")["status"] == "ready"
 
 
 def test_holdout_cli_creates_immutable_lock_only_with_sufficient_coverage(tmp_path):
     output = tmp_path / "audit" / "holdout.json"
-    args = ["--coverage-start", "2025-11-09", "--publication-id", "new", "--output", str(output)]
-    assert holdout_main([*args, "--complete-through", "2026-02-04"]) == 2
+    args = ["--coverage-start", "2026-02-06", "--publication-id", "new", "--output", str(output)]
+    assert holdout_main([*args, "--complete-through", "2026-05-04"]) == 2
     assert not output.exists()
-    ready = [*args, "--complete-through", "2026-02-05"]
+    ready = [*args, "--complete-through", "2026-05-05"]
     assert holdout_main(ready) == 0
-    assert json.loads(output.read_text())["last_anchor"] == "2026-01-06"
+    assert json.loads(output.read_text())["last_anchor"] == "2026-04-05"
     with pytest.raises(FileExistsError):
         holdout_main(ready)
 
