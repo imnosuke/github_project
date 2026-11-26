@@ -18,7 +18,7 @@ def publication(monkeypatch):
         "app_publications": [{
             "publication_id": "qa-one", "contract_version": "1.0.0-draft",
             "published_at": STAMP, "start_date": DAY, "end_date": DAY,
-            "expected_complete_through": DAY,
+            "expected_complete_through": DAY, "registry_rows": 1, "metadata_rows": 0, "status_rows": 1, "metric_rows": 1,
         }],
         "repository_registry": [{
             "repository_id": "1", "repository_name": "test/one",
@@ -46,7 +46,11 @@ def publication(monkeypatch):
             assert params["limit"] == row_limit + 1
             if name in {"daily_data_status", "repository_daily_metrics"}:
                 assert params["start"] == params["end"] == DAY
-        return deepcopy(rows[name])
+        result = deepcopy(rows[name])
+        if name != "app_publications":
+            for row in result:
+                row.setdefault("publication_id", "qa-one")
+        return result
 
     monkeypatch.setattr(module, "read_rows", read)
     return rows, reads
@@ -62,12 +66,14 @@ def test_publication_is_pinned_and_preserves_counts(publication):
 
 
 @pytest.mark.parametrize("change,message", [
-    (lambda rows: rows["daily_data_status"].clear(), "daily status coverage"),
-    (lambda rows: rows["repository_daily_metrics"].clear(), "not dense"),
+    (lambda rows: rows["daily_data_status"].clear(), "row count differs"),
+    (lambda rows: rows["repository_daily_metrics"].clear(), "row count differs"),
     (lambda rows: rows["repository_daily_metrics"][0].update(prs_merged=None), "Null required"),
     (lambda rows: rows["repository_daily_metrics"][0].update(star_events=True), "Invalid APP-02 integer"),
     (lambda rows: rows["daily_data_status"][0].update(published_at="2025-01-17T06:00:00Z"), "newer"),
     (lambda rows: rows["app_publications"][0].update(start_date="2020-01-01"), "date span"),
+    (lambda rows: rows["repository_daily_metrics"][0].update(publication_id="stale"), "different publication"),
+    (lambda rows: rows["repository_daily_metrics"][0].update(total_events=None), "without total_events"),
 ])
 def test_publication_fails_closed(publication, change, message):
     rows, _ = publication

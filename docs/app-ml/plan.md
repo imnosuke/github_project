@@ -2,7 +2,7 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
-Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03–06 hoàn tất fixture/local; phần chuẩn bị APP-07 đã merge, suite ứng dụng 44 tests pass; chưa có live adapter/đối soát Gold. **ML-01 hoàn tất thiết kế local**: regression star events 30 ngày, baseline, eligibility và time split có purge được kiểm chứng bằng code. **ML-02 hoàn tất local**: feature builder và train/evaluate CLI đã chạy trên fixture, chưa nghiệm thu khả thi hoặc model trên Gold thật.
+Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03–06 hoàn tất fixture/local; phần chuẩn bị APP-07 đã merge; biên bản triển khai publication và nghiệm thu live được theo dõi ở mục cuối. **ML-01 hoàn tất thiết kế local**: regression star events 30 ngày, baseline, eligibility và time split có purge được kiểm chứng bằng code. **ML-02 hoàn tất local**: feature builder và train/evaluate CLI đã chạy trên fixture, chưa nghiệm thu khả thi hoặc model trên Gold thật.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
 - [APP-02 — Data contract v1 draft](APP-02-data-contract-v1.md).

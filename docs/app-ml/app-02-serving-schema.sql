@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS app_serving.app_publications
     published_at String,
     expected_complete_through Nullable(Date),
     start_date Date,
-    end_date Date
+    end_date Date,
+    registry_rows Int64, metadata_rows Int64, status_rows Int64, metric_rows Int64
 )
 ENGINE = MergeTree ORDER BY (published_at, publication_id);
 

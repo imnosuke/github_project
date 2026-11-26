@@ -74,8 +74,10 @@ def main():
         st.info(f"Complete gần nhất: {latest} UTC. Chưa cấu hình kỳ vọng freshness.")
     elif latest < expected:
         st.warning(f"Dữ liệu stale: complete gần nhất {latest}, kỳ vọng đến {expected} UTC.")
-    else:
+    elif envelope["data_source"] == "fixture":
         st.caption(f"Complete gần nhất: {latest} UTC · Kỳ vọng fixture: {expected}. Freshness này theo manifest demo, không theo ngày hiện tại.")
+    else:
+        st.caption(f"Complete gần nhất: {latest} UTC · Kỳ vọng theo publication: {expected} UTC.")
 
     start_default = max(lower, (pd.Timestamp(latest or upper) - pd.Timedelta(days=29)).date())
     end_default = date.fromisoformat(latest) if latest else upper
