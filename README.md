@@ -211,6 +211,20 @@ python airflow/scripts/gharchive_extractor.py --date 2025-01-15 --hour 14 --max-
 
 Để chạy trên lịch sử đã crawl, dùng [kết quả và snapshot ML-03](docs/app-ml/ML-03-retrospective-results.md).
 
+#### Dữ liệu backfill ML-03 cho DE
+
+Bản xuất mới nhất trên GitHub có dữ liệu từ **01/01 đến 16/11/2025 UTC** cho 20 repo. Trong 320 ngày lịch, 282 ngày đạt kiểm tra chất lượng. Xem manifest để biết độ phủ và lý do của từng ngày chưa đạt. [Chỉ mục dữ liệu ML-03](https://github.com/imnosuke/github_project/blob/feature/ml-gharchive-backfill-checkpoints/ml/datasets/README.md)
+
+- Dùng `snapshot/manifest.json` và các bảng Parquet trong `snapshot/` để kiểm tra nguồn, checksum, metrics và trạng thái từng ngày trước khi audit ML-03.
+- Dùng `days/` và `scope.json` để tiếp tục backfill bằng collector tương thích với checkpoint. Giữ các cặp Parquet/checksum theo giờ và GitHub repo ID.
+
+Mở nhánh dữ liệu trong thư mục riêng:
+
+```bash
+git fetch origin feature/ml-gharchive-backfill-checkpoints
+git worktree add --detach ../github-project-data origin/feature/ml-gharchive-backfill-checkpoints
+```
+
 ### 7.2. Tổng hợp Dataset theo chuẩn Contract v1 (150 Repos × 320 Ngày)
 Gộp dữ liệu Parquet GH Archive vừa tải với danh mục 150 repositories trong 320 ngày (vượt ngưỡng tối thiểu 239 ngày của `ML-01` / `ML-03`):
 
