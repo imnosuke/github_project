@@ -52,7 +52,10 @@ def main():
         st.info("Snapshot tĩnh từ GH Archive · Số liệu theo repo và ngày trong đợt trích xuất.")
     with st.sidebar:
         st.header("Điều hướng")
-        page = st.radio("Trang", ["Overview", "Repository Explorer", "Growth Analytics"], key="page")
+        pages = ["Overview", "Repository Explorer", "Growth Analytics"]
+        if envelope["data_source"] == "fixture" and os.getenv("APP_ENABLE_PIPELINE_FIXTURE") == "1":
+            pages.append("Pipeline Health")
+        page = st.radio("Trang", pages, key="page")
         st.divider()
         st.caption(f"Nguồn: {source if source == 'clickhouse_snapshot' else envelope['data_source']}")
         st.caption(f"Publication: {envelope['publication_id']}")
@@ -60,6 +63,12 @@ def main():
         if st.button("Tải lại dữ liệu"):
             load_adapter.clear()
             st.rerun()
+
+    if page == "Pipeline Health":
+        from apps.streamlit.pipeline_fixture import render_pipeline_fixture
+
+        render_pipeline_fixture()
+        return
 
     bounds = adapter.date_bounds()
     if bounds is None:

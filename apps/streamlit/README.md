@@ -99,3 +99,7 @@ python -m streamlit run apps/streamlit/tests/forecast_fixture_app.py
 ```
 
 `APP_ML_MODEL_DIR` trỏ tới lần train fixture đã hoàn tất. Trang kiểm thử kiểm tra loại nguồn và checksum trước khi hiển thị kết quả đánh giá synthetic. Trang này có entry point riêng, ngoài điều hướng ứng dụng chính. Dự đoán thật sẽ đọc publication batch theo [dự thảo ML-04](../../docs/app-ml/ML-04-prediction-contract-draft.md).
+
+## Pipeline Health fixture
+
+Đặt `APP_ENABLE_PIPELINE_FIXTURE=1` cùng `APP_DATA_SOURCE=fixture` để mở trang kiểm thử APP-10. Dữ liệu giả lập bao gồm ngày complete, lần chạy thiếu giờ rồi retry thành công, và ngày provisional khiến publication trễ. Trang giữ cả lịch sử các lần thử. Khi DE bàn giao log vận hành, đối chiếu khóa run/attempt, giờ kỳ vọng và giờ xử lý theo [checklist staging](../../docs/gharchive-streaming-staging.md).
