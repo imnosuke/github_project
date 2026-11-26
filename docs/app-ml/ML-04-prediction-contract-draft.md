@@ -25,3 +25,9 @@ Tính feature từ `[anchor_date-29, anchor_date]`. Batch inference chỉ cần 
 - Batch ghi vào vùng staging, kiểm tra schema, repo coverage, khóa trùng, giá trị và provenance rồi mới chuyển con trỏ publication. Batch lỗi giữ publication hợp lệ trước đó và ghi trạng thái lỗi ở cấp batch.
 - Explorer và Growth đọc publication đang phục vụ, hiển thị horizon, anchor và giờ cập nhật. Khi thiếu publication hoặc thiếu feature, hiển thị đúng lý do. Khi quá SLA đã chốt, gắn nhãn stale dựa trên anchor và thời gian publish.
 - Artifact hồi cứu chỉ dùng trong đánh giá offline. Bật serving sau khi có model đã nghiệm thu, input Gold đối soát và SLA cùng cơ chế publish được DE thống nhất.
+
+## Chạy thử offline với fixture
+
+Dùng `python -m ml.batch_fixture --fixture PATH --run MODEL_RUN_DIR --anchor YYYY-MM-DD --decision-at UTC_TIMESTAMP --output PATH` với lần train fixture có `run.json` và `model.json`. Batch kiểm tra loại nguồn, schema feature và checksum của model. File JSON đã commit có ID ổn định theo khóa batch. Retry trả lại kết quả đã commit. Lỗi ghi hoặc công bố giữ nguyên các file đã commit trước đó. Batch fixture nằm ngoài luồng serving.
+
+Để khóa holdout ML-03, dùng `python -m ml.holdout_plan --coverage-start DATE --complete-through DATE --publication-id ID --output FILE` sau khi xác minh coverage liền mạch. Công cụ chỉ dùng metadata độ phủ, không đọc nhãn hoặc điểm. Với lịch sử đã chấm hiện tại, anchor sớm nhất là 2025-12-08 và 30 anchor cần dữ liệu hoàn chỉnh đến 2026-02-05 UTC. Chỉ ghi file khóa khi đủ độ phủ.
