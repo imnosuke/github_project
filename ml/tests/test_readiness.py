@@ -128,6 +128,8 @@ def test_invalid_input_creates_error_report_without_fabricated_coverage(tmp_path
 
 
 def test_clickhouse_unavailable_does_not_fall_back_to_fixture(tmp_path, monkeypatch):
+    from apps.streamlit.data import clickhouse_publication
+    monkeypatch.setattr(clickhouse_publication, "read_rows", lambda *_, **__: [])
     monkeypatch.setenv("APP_CLICKHOUSE_HOST", "localhost")
     output = tmp_path / "audit"
     assert main(["audit", "--config", APP_CONFIG, "--source", "clickhouse", "--output", str(output)]) == 2
@@ -135,7 +137,7 @@ def test_clickhouse_unavailable_does_not_fall_back_to_fixture(tmp_path, monkeypa
     assert report["requested_source"] == "clickhouse"
     assert report["data_status"] == "unavailable"
     assert report["input_error"]["category"] == "source_unavailable"
-    assert "live adapter is not implemented" in report["input_error"]["message"]
+    assert "no committed APP-02 publication" in report["input_error"]["message"]
     assert "input_coverage" not in report
 
 

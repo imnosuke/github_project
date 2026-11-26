@@ -26,6 +26,12 @@ Tính feature từ `[anchor_date-29, anchor_date]`. Batch inference chỉ cần 
 - Explorer và Growth đọc publication đang phục vụ, hiển thị horizon, anchor và giờ cập nhật. Khi thiếu publication hoặc thiếu feature, hiển thị đúng lý do. Khi quá SLA đã chốt, gắn nhãn stale dựa trên anchor và thời gian publish.
 - Artifact hồi cứu chỉ dùng trong đánh giá offline. Bật serving sau khi có model đã nghiệm thu, input Gold đối soát và SLA cùng cơ chế publish được DE thống nhất.
 
+## Điều kiện chọn model và mở luồng batch
+
+Chốt phạm vi ban đầu ở 20 repo đã đánh giá hồi cứu. Persistence 30 ngày là baseline bắt buộc để đối chiếu. Phiên bản model được đưa vào batch phải tham chiếu lượt nghiệm thu ML-03 trên Gold và checksum artifact. Khoảng test hồi cứu 2025-09-10 đến 2025-10-09 đã dùng để chấm điểm. Khi xem xét lựa chọn Ridge, khóa một holdout mới trước khi xem điểm của nó.
+
+Producer công bố danh sách repo thuộc scope của anchor, kết quả cho từng repo và manifest theo cùng một batch ID. App chỉ đọc batch đã commit, xem kết quả có thuộc anchor đang chọn, giữ trạng thái thiếu feature và dùng timestamp công bố để đánh giá freshness. SLA chạy và thời gian giữ publication cần được chốt khi DE đo staging. Phần triển khai batch chờ model và publication Gold đã nghiệm thu.
+
 ## Chạy thử offline với fixture
 
 Dùng `python -m ml.batch_fixture --fixture PATH --run MODEL_RUN_DIR --anchor YYYY-MM-DD --decision-at UTC_TIMESTAMP --output PATH` với lần train fixture có `run.json` và `model.json`. Batch kiểm tra loại nguồn, schema feature và checksum của model. File JSON đã commit có ID ổn định theo khóa batch. Retry trả lại kết quả đã commit. Lỗi ghi hoặc công bố giữ nguyên các file đã commit trước đó. Batch fixture nằm ngoài luồng serving.

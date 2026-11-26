@@ -15,3 +15,9 @@ Chạy CLI thủ công để lấy mẫu dùng prefix `samples/gharchive/`. Khi 
 
 - Pytest phát lại 24 file của snapshot APP-07 (516 events) qua parser và upload mock. Đã kiểm tra lỗi upload, thử lại và 404.
 - ClickHouse local 24.3.12.75 trên máy đặt timezone Asia/Bangkok đã chạy SQL Silver/Gold với ngày đích UTC. Kết quả khớp đối soát trước và sau khi nạp lại. Staging cần chạy toàn bộ DAG, MinIO và dbt materialization.
+
+## Bằng chứng DE cần lưu sau mỗi lần chạy
+
+Dùng cùng `dag_run_id` để liên kết lần tải, nạp và build dbt. Ghi thời điểm bắt đầu/kết thúc UTC, scope repo, các giờ kỳ vọng/đã xử lý/thiếu, số record bị loại và lý do, checksum hoặc mã phiên bản object khi có, số dòng Bronze FINAL, kết quả dbt test và `publication_id` nếu đã công bố. Ghi riêng từng lần thử khi Airflow retry. Lần chạy có lỗi hoặc thiếu giờ vẫn cần một dòng trạng thái để APP-10 phân biệt đang trễ với chưa có dữ liệu vận hành.
+
+Khi nối vào APP-10, khóa bản ghi theo `dag_run_id` và số lần thử. Freshness lấy từ publication thực tế và SLA đã chốt. Một giờ có Parquet rỗng vì scope không phát sinh sự kiện vẫn được tính là đã xử lý nếu đã xác minh tải và parse thành công.

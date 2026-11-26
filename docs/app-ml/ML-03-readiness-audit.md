@@ -46,7 +46,7 @@ python3 -m ml.cli audit --config ml/configs/smoke.json \
   --source clickhouse --output /tmp/ml03-audit-gold
 ```
 
-Kết nối dùng cấu hình server-side APP-07, không có CLI password. Hiện ClickHouse adapter **chưa implement**: khi cấu hình hợp lệ, audit ghi `source_unavailable` thay vì đọc fixture. Cấu hình/input sai được báo riêng; không có fallback âm thầm. `--fixture-dir` chỉ đi cùng source fixture. Chưa có audit Gold thực tế từ lệnh mẫu này.
+Kết nối dùng cấu hình server-side APP-07. Đặt `APP_CLICKHOUSE_DATABASE=app_serving` để đọc publication theo APP-02. Khi endpoint không khả dụng hoặc chưa có publication, audit ghi `source_unavailable`. Khi publication sai schema hoặc thiếu coverage, audit báo lỗi input. Audit luôn kiểm tra thêm các gate về đối soát Gold và thời điểm khả dụng. Các gate này cần bằng chứng từ môi trường DE.
 
 ## Kiểm tra tự động và cách đọc kết quả
 

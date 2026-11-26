@@ -1,5 +1,7 @@
 """Local Streamlit application for repository analytics."""
 from datetime import date
+import hashlib
+import json
 import os
 from pathlib import Path
 import sys
@@ -18,8 +20,8 @@ from apps.streamlit.analytics import render_overview, render_growth
 st.set_page_config(page_title="RepoScope · GitHub Analytics", page_icon="📊", layout="wide")
 
 
-@st.cache_resource
-def load_adapter(source, directory, interface_version):
+@st.cache_resource(ttl=300)
+def load_adapter(source, directory, interface_version, connection_key=None):
     # Include the consumer interface in the cache key across hot reloads.
     return get_adapter(source=source, directory=directory)
 
@@ -31,9 +33,13 @@ def main():
     directory = os.getenv("APP_FIXTURE_DIR") or str(Path(__file__).parent / "data" / "fixtures")
     if source in {"snapshot", "clickhouse_snapshot"}:
         directory = os.getenv("APP_SNAPSHOT_DIR")
+    connection_key = None
+    if source in {"clickhouse", "clickhouse_snapshot"}:
+        settings = {key: value for key, value in os.environ.items() if key.startswith("APP_CLICKHOUSE_")}
+        connection_key = hashlib.sha256(json.dumps(settings, sort_keys=True).encode("utf8")).hexdigest()
     try:
         with st.spinner("Đang kiểm tra và tải dữ liệu…"):
-            adapter = load_adapter(source, directory, interface_version="app-07-v1")
+            adapter = load_adapter(source, directory, interface_version="app-07-v1", connection_key=connection_key)
             envelope = adapter.publication()
     except Exception as exc:
         st.error("Không thể tải nguồn dữ liệu. Kiểm tra cấu hình và thư mục dữ liệu.")
@@ -74,8 +80,10 @@ def main():
         st.info(f"Complete gần nhất: {latest} UTC. Chưa cấu hình kỳ vọng freshness.")
     elif latest < expected:
         st.warning(f"Dữ liệu stale: complete gần nhất {latest}, kỳ vọng đến {expected} UTC.")
-    else:
+    elif envelope["data_source"] == "fixture":
         st.caption(f"Complete gần nhất: {latest} UTC · Kỳ vọng fixture: {expected}. Freshness này theo manifest demo, không theo ngày hiện tại.")
+    else:
+        st.caption(f"Complete gần nhất: {latest} UTC · Kỳ vọng theo publication: {expected} UTC.")
 
     start_default = max(lower, (pd.Timestamp(latest or upper) - pd.Timedelta(days=29)).date())
     end_default = date.fromisoformat(latest) if latest else upper
