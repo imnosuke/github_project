@@ -96,3 +96,13 @@ ML-03 training/evaluation trên Gold và các checklist tương ứng trong plan
 Validation local ngày 14/11/2026: **120 passed in 11.34s** (76 tests ML và 44 tests ứng dụng), `git diff --check` sạch. Hai lệnh audit đã chạy trực tiếp: app fixture trả data blocked; long smoke fixture trả data passed nhưng overall blocked, đều exit 2 như quy ước. Chưa chạy audit trên Gold.
 
 Review trước bàn giao: Gemini 3.8 Flash và Codex review độc lập lần 2 đều không phát hiện lỗi chức năng cần sửa. Codex chạy lại **120 tests pass trong 11.23s**, diff sạch. Các review xác minh công cụ local, không phải xác nhận data contract hoặc nghiệm thu ML-03 trên Gold.
+
+## Ghi nhận thời điểm dữ liệu khả dụng
+
+Sau khi ClickHouse công bố APP-02, chạy `python -m ml.observe_publication --source-name ENDPOINT_NAME --output PATH` bằng cấu hình `APP_CLICKHOUSE_*` chỉ đọc. Chọn một tên riêng cho từng môi trường. Lệnh ghi thời điểm app đọc và validate thành công, giữ quan sát đầu tiên cho từng cặp nguồn/publication, và báo lỗi nếu nội dung đổi dưới cùng ID. Dùng `observed_at` để kiểm tra publication đã được xác nhận khả dụng trước `decision_at` trong các lần chạy sau. Giữ `declared_published_at` để đối chiếu với thời điểm quan sát. Lần nạp hồi cứu ghi được bằng chứng cho lần đọc hiện tại, không chứng minh dữ liệu đã có trong quá khứ.
+
+### Thu thập dự đoán thử trước khi nhãn xuất hiện
+
+Dùng cùng một `--source-name` và thư mục bền vững cho `python -m ml.prospective capture --source-name NAME --output PATH` và `python -m ml.prospective evaluate --source-name NAME --output PATH`. Cả hai lệnh đọc publication thật qua `APP_CLICKHOUSE_*`. `capture` chỉ xét anchor là ngày UTC trước thời điểm chạy, áp dụng quality gate của feature và ghi lần dự đoán hợp lệ đầu tiên của ngày. Dấu thời gian publication và lần reader đọc được lưu cùng persistence 30 ngày và baseline zero. Lượt chưa đủ feature trả trạng thái `blocked` để pipeline có thể thử lại trong ngày.
+
+`evaluate` dùng 30 anchor đầu đã ghi, chờ cả cửa sổ nhãn 30 ngày và giữ trạng thái `blocked` nếu nhãn còn thiếu hoặc provisional. Báo cáo tách số liệu theo anchor và mức activity. Đây là đánh giá thử theo thời điểm chạy để tích lũy bằng chứng. Điều kiện nghiệm thu ML-03 đầy đủ vẫn gồm split train/validation/test, coverage, đối soát Gold và xác nhận contract. Luồng phục vụ ML-04 cần quyết định release riêng.

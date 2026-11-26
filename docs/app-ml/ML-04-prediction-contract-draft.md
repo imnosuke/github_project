@@ -31,3 +31,9 @@ Tính feature từ `[anchor_date-29, anchor_date]`. Batch inference chỉ cần 
 Chốt phạm vi ban đầu ở 20 repo đã đánh giá hồi cứu. Persistence 30 ngày là baseline bắt buộc để đối chiếu. Phiên bản model được đưa vào batch phải tham chiếu lượt nghiệm thu ML-03 trên Gold và checksum artifact. Khoảng test hồi cứu 2025-09-10 đến 2025-10-09 đã dùng để chấm điểm. Khi xem xét lựa chọn Ridge, khóa một holdout mới trước khi xem điểm của nó.
 
 Producer công bố danh sách repo thuộc scope của anchor, kết quả cho từng repo và manifest theo cùng một batch ID. App chỉ đọc batch đã commit, xem kết quả có thuộc anchor đang chọn, giữ trạng thái thiếu feature và dùng timestamp công bố để đánh giá freshness. SLA chạy và thời gian giữ publication cần được chốt khi DE đo staging. Phần triển khai batch chờ model và publication Gold đã nghiệm thu.
+
+## Chạy thử offline với fixture
+
+Dùng `python -m ml.batch_fixture --fixture PATH --run MODEL_RUN_DIR --anchor YYYY-MM-DD --decision-at UTC_TIMESTAMP --output PATH` với lần train fixture có `run.json` và `model.json`. Batch kiểm tra loại nguồn, schema feature và checksum của model. File JSON đã commit có ID ổn định theo khóa batch. Retry trả lại kết quả đã commit. Lỗi ghi hoặc công bố giữ nguyên các file đã commit trước đó. Batch fixture nằm ngoài luồng serving.
+
+Để khóa holdout ML-03, dùng `python -m ml.holdout_plan --coverage-start DATE --complete-through DATE --publication-id ID --output FILE` sau khi xác minh coverage liền mạch. Công cụ chỉ dùng metadata độ phủ. Holdout đã chấm gần nhất kết thúc ở anchor `2026-01-06` với nhãn đến `2026-02-05`. Một cửa sổ hồi cứu kế tiếp bắt đầu sớm nhất ở anchor `2026-03-07` và cần dữ liệu hoàn chỉnh đến `2026-05-05` UTC. Nghiệm thu theo thời điểm dự đoán còn cần bằng chứng availability tương ứng. Chỉ ghi file khóa khi đủ độ phủ.
