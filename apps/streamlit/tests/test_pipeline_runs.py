@@ -5,6 +5,7 @@ import runpy
 import sqlite3
 
 import pandas as pd
+import pytest
 from streamlit.testing.v1 import AppTest
 
 
@@ -53,3 +54,30 @@ def test_exported_pipeline_runs_remain_visible_during_gold_error(monkeypatch, tm
     assert summary.loc[0, "Thời lượng (giây)"] == 120
     assert list(hours.iloc[0]["Giờ thiếu (UTC)"]) == ["2025-01-15 01:00Z"]
     assert list(tasks["Trạng thái"]) == ["failed"]
+
+
+@pytest.mark.parametrize("suffix", ["", "-wal"])
+def test_export_rejects_output_pointing_at_database(tmp_path, suffix):
+    database = tmp_path / "airflow.db"
+    with closing(sqlite3.connect(database)) as connection:
+        connection.execute("CREATE TABLE sentinel(id INTEGER)")
+    before = database.read_bytes()
+    export = runpy.run_path(str(EXPORTER))["main"]
+    with pytest.raises(SystemExit) as exc:
+        export(["--database", str(database), "--output", str(database) + suffix])
+    assert exc.value.code == 2
+    assert database.read_bytes() == before
+
+
+def test_pipeline_shows_error_for_invalid_hour_count(monkeypatch, tmp_path):
+    output = tmp_path / "invalid-runs.json"
+    output.write_text(json.dumps({
+        "source": "airflow-local", "exported_at": "2026-11-26T00:00:00Z",
+        "runs": [{"run_id": "bad-run", "missing_hours": "invalid", "task_states": []}],
+    }), encoding="utf8")
+    monkeypatch.setenv("APP_DATA_SOURCE", "fixture")
+    monkeypatch.setenv("APP_PIPELINE_RUNS_FILE", str(output))
+    app = AppTest.from_file(str(APP)).run()
+    app.sidebar.radio(key="page").set_value("Pipeline Health").run()
+    assert not app.exception
+    assert any("Không đọc được bản xuất Airflow" in item.value for item in app.error)

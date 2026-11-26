@@ -80,7 +80,11 @@ def main(argv=None):
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    runs = read_runs(args.database)
+    database = args.database.resolve()
+    database_files = {database.with_name(database.name + suffix) for suffix in ("", "-wal", "-shm", "-journal")}
+    if args.output.resolve() in database_files:
+        parser.error("--output must be separate from the Airflow database and its sidecar files")
+    runs = read_runs(database)
     report = {
         "source": "airflow-local",
         "exported_at": datetime.now(timezone.utc).isoformat(),

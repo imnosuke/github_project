@@ -28,6 +28,8 @@ def render_pipeline_runs(path):
         if report["source"] != "airflow-local" or not isinstance(report["runs"], list):
             raise ValueError("Invalid Airflow export")
         runs = pd.DataFrame.from_records(report["runs"], columns=[*COLUMNS, "missing_target_hours"])
+        missing_counts = pd.to_numeric(runs.missing_hours, errors="raise")
+        missing = runs.loc[missing_counts.fillna(0).gt(0), ["run_id", "missing_target_hours"]]
         task_rows = [
             {"Airflow run ID": run["run_id"], "Task": task["task_id"], "Trạng thái": task["state"]}
             for run in report["runs"] for task in run["task_states"]
@@ -43,7 +45,6 @@ def render_pipeline_runs(path):
         return
     st.caption("Các cột giờ dựa trên kết quả upload MinIO. Ô trống biểu thị Airflow chưa ghi nhận kết quả. Mỗi lần chạy lại có run ID riêng.")
     st.dataframe(runs[list(COLUMNS)].rename(columns=COLUMNS), hide_index=True, width="stretch")
-    missing = runs.loc[runs.missing_hours.fillna(0).gt(0), ["run_id", "missing_target_hours"]]
     if not missing.empty:
         with st.expander("Giờ chưa có trong kết quả upload"):
             st.dataframe(missing.rename(columns={"run_id": COLUMNS["run_id"], "missing_target_hours": "Giờ thiếu (UTC)"}),
