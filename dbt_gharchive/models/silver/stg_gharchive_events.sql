@@ -1,6 +1,8 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
+        incremental_strategy='delete+insert',
+        unique_key='event_date',
         engine='ReplacingMergeTree(_ingested_at)',
         order_by='(event_date, event_type, event_id)'
     )
@@ -23,6 +25,20 @@ WITH deduplicated_bronze AS (
         _ingested_at
     FROM {{ source('bronze', 'gharchive_events') }} FINAL
     WHERE event_id != ''
+    {% if is_incremental() %}
+      {% set target_dates = var('target_dates', '') %}
+      {% if target_dates != '' %}
+        AND toDate(parseDateTimeBestEffortOrZero(created_at, 'UTC')) IN (
+            {% for d in target_dates.split(',') %}
+              toDate('{{ d.strip() }}'){% if not loop.last %}, {% endif %}
+            {% endfor %}
+        )
+      {% else %}
+        AND toDate(parseDateTimeBestEffortOrZero(created_at, 'UTC')) >= (
+            SELECT coalesce(max(event_date), toDate('1970-01-01')) FROM {{ this }}
+        )
+      {% endif %}
+    {% endif %}
 )
 
 SELECT
@@ -31,9 +47,9 @@ SELECT
     public AS is_public,
 
     -- Chuẩn hóa thời gian
-    parseDateTimeBestEffortOrZero(created_at) AS event_timestamp,
-    toDate(parseDateTimeBestEffortOrZero(created_at)) AS event_date,
-    toHour(parseDateTimeBestEffortOrZero(created_at)) AS event_hour,
+    parseDateTimeBestEffortOrZero(created_at, 'UTC') AS event_timestamp,
+    toDate(parseDateTimeBestEffortOrZero(created_at, 'UTC')) AS event_date,
+    toHour(parseDateTimeBestEffortOrZero(created_at, 'UTC')) AS event_hour,
 
     -- Chuẩn hóa thông tin Actor (Lập trình viên)
     ifNull(actor_id, 0) AS actor_id,
