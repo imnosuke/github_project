@@ -19,10 +19,13 @@ def render_pipeline_fixture():
                                       "processed_hours", "status"])
     runs["missing_hours"] = runs.expected_hours - runs.processed_hours
     latest = runs.sort_values("attempt").drop_duplicates("run_id", keep="last")
-    latest_complete = latest.loc[latest.status.eq("complete"), "day_utc"].max()
-    st.caption(f"Ngày complete gần nhất: {latest_complete} UTC · Kỳ vọng: {EXPECTED_THROUGH} UTC")
-    if latest_complete < EXPECTED_THROUGH:
+    complete = latest.loc[latest.status.eq("complete"), "day_utc"]
+    latest_complete = "Chưa có" if complete.empty else f"{complete.max()} UTC"
+    st.caption(f"Ngày complete gần nhất: {latest_complete} · Kỳ vọng: {EXPECTED_THROUGH} UTC")
+    if complete.empty or complete.max() < EXPECTED_THROUGH:
         st.warning("Publication trễ so với kỳ vọng của fixture.")
+    if latest.status.ne("complete").any():
+        st.info("Một số ngày theo dõi trong fixture còn thiếu kết quả.")
     st.dataframe(latest.sort_values("day_utc", ascending=False), hide_index=True, width="stretch")
     with st.expander("Lịch sử lần chạy và retry"):
         st.dataframe(runs.sort_values(["day_utc", "attempt"], ascending=False), hide_index=True, width="stretch")
