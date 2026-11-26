@@ -104,3 +104,11 @@ python -m streamlit run apps/streamlit/tests/forecast_fixture_app.py
 `APP_DATA_SOURCE=clickhouse` sử dụng năm bảng phục vụ trong [DDL APP-02](../../docs/app-ml/app-02-serving-schema.sql); đặt `APP_CLICKHOUSE_DATABASE=app_serving`. Mỗi lần tải chọn một manifest đã công bố, đọc bốn bảng con theo cùng ID rồi kiểm tra độ phủ trước khi hiển thị. Giới hạn 366 ngày và 50.000 hàng trên mỗi bảng. Dữ liệu live lỗi hoặc thiếu không bật fixture. UI làm mới cache sau tối đa 5 phút trong lần render tiếp theo; nút tải lại cho phép lấy publication mới ngay.
 
 Khi nghiệm thu, giữ log đối soát 24 giờ và lần replay của DE, rồi xác nhận Growth với hai cửa sổ 30 ngày. Chế độ `clickhouse_snapshot` tiếp tục dùng cho một ngày local đã đối soát.
+
+## Lệnh đối soát APP-07/11
+
+```bash
+python -m apps.streamlit.acceptance --reference PATH_TO_VERIFIED_SNAPSHOT --reference-day 2025-01-15 --anchor 2025-03-01
+```
+
+Lệnh dùng cấu hình `APP_CLICKHOUSE_*` ở phía server và in JSON. Chọn ngày đối soát nằm trong cả hai nguồn và một anchor có 60 ngày lịch sử. Mã thoát 0 yêu cầu số event/star/fork của các repo tham chiếu khớp, 60 ngày complete và có repo đủ điều kiện Growth. JSON ghi repo không khớp, ngày thiếu, số repo đủ điều kiện Growth và thời gian đọc để DE kiểm tra coverage/SLA.
