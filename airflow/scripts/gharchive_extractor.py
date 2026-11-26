@@ -235,6 +235,7 @@ def stream_https_to_minio_parquet(
     batch_size: int = 50000,
     tracked_repos: Optional[Iterable[str]] = None,
     max_records_per_file: Optional[int] = None,
+    tracked_repository_ids: Optional[Set[int]] = None,
 ) -> Dict[str, Any]:
     """
     Đọc stream trực tiếp từ HTTPS GH Archive, giải nén Gzip và đóng gói Parquet
@@ -251,7 +252,7 @@ def stream_https_to_minio_parquet(
     s3_key = f"{layer_prefix}/year={year}/month={month}/day={day}/{parquet_filename}"
     url = f"{GHARCHIVE_BASE_URL}/{filename}"
 
-    repo_filter = parse_repo_filter(tracked_repos)
+    repo_filter = parse_repo_filter(tracked_repos) if tracked_repository_ids is None else None
     if max_records_per_file is None:
         env_max = os.getenv("GHARCHIVE_MAX_RECORDS_PER_FILE", "").strip()
         if env_max.isdigit() and int(env_max) > 0:
@@ -298,6 +299,14 @@ def stream_https_to_minio_parquet(
 
                     repo = record.get("repo") or {}
                     repo_name = repo.get("name")
+                    if tracked_repository_ids is not None:
+                        if repo.get("id") not in tracked_repository_ids:
+                            continue
+                        if not (repo_name and record.get("id") and record.get("type")):
+                            raise ValueError(f"Invalid scoped event in {filename}, record {scanned_records}")
+                        stamp = datetime.fromisoformat(record.get("created_at") or "")
+                        if stamp.tzinfo is None or stamp.astimezone(timezone.utc).strftime("%Y-%m-%d") != date_str:
+                            raise ValueError(f"Scoped event outside the source day: {filename}")
                     if repo_filter is not None:
                         if not repo_name or str(repo_name).lower() not in repo_filter:
                             continue

@@ -47,6 +47,25 @@ def fixture_gzip(hour):
     return gzip.compress("\n".join(map(json.dumps, events)).encode())
 
 
+def test_scoped_stream_uses_permanent_repository_id(monkeypatch):
+    events = [{"id": "same-scope", "type": "WatchEvent", "created_at": f"{DAY}T00:10:00Z",
+               "repo": {"id": 123, "name": "renamed/current"}},
+              {"id": "outside", "type": "WatchEvent", "created_at": f"{DAY}T00:20:00Z",
+               "repo": {"id": 456, "name": "old/name"}}]
+    s3 = Mock()
+    payload = []
+    s3.upload_fileobj.side_effect = lambda stream, *_: payload.append(stream.read())
+    monkeypatch.setattr(extractor, "get_s3_client", lambda: s3)
+    monkeypatch.setattr(extractor, "ensure_bucket_exists", lambda *_: None)
+    monkeypatch.setattr(extractor.requests, "get", lambda *_, **__: Response(gzip.compress(
+        "\n".join(map(json.dumps, events)).encode())))
+    monkeypatch.setenv("GHARCHIVE_TRACKED_REPOS", "old/name")
+    monkeypatch.delenv("GHARCHIVE_MAX_RECORDS_PER_FILE", raising=False)
+    result = extractor.stream_https_to_minio_parquet(DAY, 0, tracked_repository_ids={123})
+    assert result["records"] == 1
+    assert pq.read_table(io.BytesIO(payload[0])).column("repo_id").to_pylist() == [123]
+
+
 def test_twenty_four_hours_retry_and_missing_source(monkeypatch):
     sources = {hour: fixture_gzip(hour) for hour in range(24)}
     objects = {}

@@ -21,12 +21,13 @@ def test_exported_pipeline_runs_remain_visible_during_gold_error(monkeypatch, tm
             CREATE TABLE dag_run(dag_id, run_id, state, execution_date, start_date, end_date);
             CREATE TABLE xcom(dag_id, run_id, task_id, map_index, key, value);
             CREATE TABLE task_instance(dag_id, run_id, task_id, map_index, state);
-            CREATE TABLE task_fail(dag_id, run_id);
+            CREATE TABLE task_fail(dag_id, run_id, task_id, start_date, end_date);
             INSERT INTO dag_run VALUES
                 ('gharchive_to_minio_hourly', 'first', 'failed', '2025-01-16 00:00:00', NULL, NULL),
                 ('gharchive_to_minio_hourly', 'replay', 'success', '2025-01-16 01:00:00',
                  '2025-01-16 01:00:00', '2025-01-16 01:02:00');
-            INSERT INTO task_fail VALUES ('gharchive_to_minio_hourly', 'first');
+            INSERT INTO task_fail VALUES ('gharchive_to_minio_hourly', 'first', 'stream_gharchive_to_minio_s3',
+                                          '2025-01-16 00:00:00', '2025-01-16 00:01:00');
             INSERT INTO task_instance VALUES
                 ('gharchive_to_minio_hourly', 'first', 'stream_gharchive_to_minio_s3', -1, 'failed');
         """)
@@ -35,6 +36,7 @@ def test_exported_pipeline_runs_remain_visible_during_gold_error(monkeypatch, tm
             ("first", "resolve_target_datetime", "targets", json.dumps(targets)),
             ("replay", "resolve_target_datetime", "targets", json.dumps(targets)),
             ("replay", "stream_gharchive_to_minio_s3", "items", json.dumps(targets[:1])),
+            ("replay", "publish_app02_gold", "publication_id", json.dumps("published-1")),
         ])
         connection.commit()
 
@@ -46,7 +48,7 @@ def test_exported_pipeline_runs_remain_visible_during_gold_error(monkeypatch, tm
     assert app.error
     app.sidebar.radio(key="page").set_value("Pipeline Health").run()
     assert not app.error and not app.exception
-    summary, hours, tasks = (table.value for table in app.dataframe)
+    summary, hours, tasks, failures = (table.value for table in app.dataframe)
     assert list(summary["Airflow run ID"]) == ["replay", "first"]
     assert pd.isna(summary.loc[1, "Giờ đã upload"])
     assert pd.isna(summary.loc[1, "Giờ thiếu"])
@@ -54,6 +56,8 @@ def test_exported_pipeline_runs_remain_visible_during_gold_error(monkeypatch, tm
     assert summary.loc[0, "Thời lượng (giây)"] == 120
     assert list(hours.iloc[0]["Giờ thiếu (UTC)"]) == ["2025-01-15 01:00Z"]
     assert list(tasks["Trạng thái"]) == ["failed"]
+    assert summary.loc[0, "Publication APP-02"] == "published-1"
+    assert list(failures["Task"]) == ["stream_gharchive_to_minio_s3"]
 
 
 @pytest.mark.parametrize("suffix", ["", "-wal"])

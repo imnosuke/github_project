@@ -75,6 +75,7 @@ def load_minio_parquet_to_bronze(
     hour: int,
     bucket_name: str = None,
     layer_prefix: str = "bronze/events_parquet",
+    repository_ids=None,
 ) -> int:
     """
     Sử dụng hàm `s3()` tích hợp của ClickHouse để đọc trực tiếp file Parquet từ MinIO
@@ -137,8 +138,9 @@ def load_minio_parquet_to_bronze(
     """
     execute_clickhouse_sql(insert_sql, database="bronze")
 
+    scope_filter = "" if repository_ids is None else " AND repo_id IN (" + ",".join(str(int(rid)) for rid in sorted(repository_ids)) + ")"
     count_str = execute_clickhouse_sql(
-        f"SELECT count() FROM bronze.gharchive_events FINAL WHERE _source_file = '{filename}'",
+        f"SELECT count() FROM bronze.gharchive_events FINAL WHERE _source_file = '{filename}'{scope_filter}",
         database="bronze",
     )
     inserted_rows = int(count_str or 0)
