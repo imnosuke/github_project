@@ -68,6 +68,10 @@ Mapping ban đầu từ `gold.gold_repo_daily_activity` sang APP-02 dùng `repo_
 
 Khi bàn giao, ghi kết quả hai hàng cùng tên view/schema, publication hoặc thời điểm query và bằng chứng độ phủ 24 giờ. Phía ứng dụng cần địa chỉ ClickHouse, tài khoản chỉ đọc qua kênh cấu hình phía server và mapping các bảng registry, status, publication trước khi bật adapter live.
 
+### Thử nghiệm qua HTTP trên máy local
+
+ClickHouse 24.3.12.75 UTC đã nạp 516 event từ 24 tệp giờ vào Bronze, giữ 516 event ở Silver và tạo hai hàng Gold. Truy vấn đối soát trả `match` cho cả hai repo. Chế độ `clickhouse_snapshot` cho phép Streamlit đọc metrics từ Gold qua tài khoản chỉ đọc và kiểm tra chúng với snapshot một ngày trước khi hiển thị. Các bảng registry, metadata và status vẫn đến từ snapshot tham chiếu. [Cấu hình chạy](../../apps/streamlit/README.md#thử-đọc-gold-trên-clickhouse-local)
+
 ## Độ đầy đủ của số liệu PR merge
 
 Giữ `prs_merged` và `prs_closed_unmerged` để phân tích hoạt động. Silver chỉ chấp nhận cờ JSON boolean `true` hoặc `false`. Nếu một sự kiện đóng PR thiếu cờ hợp lệ, Gold để cả hai chỉ số ở `null` cho repo/ngày tương ứng, kể cả khi các PR đóng khác cùng ngày có cờ hợp lệ. Repo/ngày có dữ liệu đầy đủ và không có PR đóng có giá trị `0` cho cả hai chỉ số.
@@ -106,3 +110,10 @@ SETTINGS join_use_nulls = 1;
 ```
 
 Đối soát thêm một repo/ngày đã xác minh đầy đủ để kiểm tra số đếm `true` và `false`, rồi lưu kết quả cùng publication và thời điểm truy vấn. Nếu cần bù lịch sử, ưu tiên nguồn của DE đã đối soát. Với GitHub REST timeline, ghép theo repo, số PR và thời điểm đóng. Kiểm tra lần mở lại và lần merge trước khi phân loại, giữ `null` khi chưa ghép được. [GitHub REST timeline](https://docs.github.com/en/rest/issues/timeline)
+
+
+## Bàn giao nguồn Gold cho APP-07 và ML-03
+
+Giữ một đường đọc Gold thông qua adapter của APP-02. Chế độ `clickhouse_snapshot` dùng một snapshot tham chiếu đã đối soát, truy vấn bằng ID repo và ngày, và báo lỗi nếu Gold lệch snapshot. Đây là bước kiểm thử mapping local.
+
+Để mở adapter live, DE bàn giao Gold cùng registry, status/coverage theo giờ và publication ID nhất quán. Phía APP/ML xác nhận kiểu nullable của hai cột PR, độ đầy đủ của scope và thời điểm publication khả dụng. Đọc bằng quyền read-only, lọc ngày/phạm vi ở ClickHouse, giữ NULL cho số đếm chưa xác định và báo lỗi nguồn rõ ràng. Giữ Gold và dữ liệu mẫu ở hai đường đọc riêng để tránh ghi đè hoặc trộn nguồn trong feature/label.

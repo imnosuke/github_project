@@ -250,6 +250,13 @@ class SnapshotAdapter(FixtureAdapter):
 
 
 def get_adapter(source="fixture", directory=None) -> DataAdapter:
+    if source == "clickhouse_snapshot":
+        from .clickhouse_snapshot import ClickHouseSnapshotAdapter
+        from .config import ClickHouseConfig
+
+        if not directory:
+            raise ValueError("APP_SNAPSHOT_DIR is required for ClickHouse snapshot data")
+        return ClickHouseSnapshotAdapter(directory, ClickHouseConfig.from_env())
     if source == "clickhouse":
         from .config import ClickHouseConfig
         ClickHouseConfig.from_env()
@@ -259,5 +266,5 @@ def get_adapter(source="fixture", directory=None) -> DataAdapter:
             raise ValueError("APP_SNAPSHOT_DIR is required for snapshot data")
         return SnapshotAdapter(directory)
     if source != "fixture":
-        raise ValueError("APP_DATA_SOURCE must be fixture, snapshot or clickhouse")
+        raise ValueError("APP_DATA_SOURCE must be fixture, snapshot, clickhouse_snapshot or clickhouse")
     return FixtureAdapter(directory or Path(__file__).parent / "fixtures")

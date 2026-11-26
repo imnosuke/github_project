@@ -29,7 +29,7 @@ def main():
     st.caption("GitHub activity · Repository Explorer · Growth Analytics")
     source = os.getenv("APP_DATA_SOURCE", "fixture")
     directory = os.getenv("APP_FIXTURE_DIR") or str(Path(__file__).parent / "data" / "fixtures")
-    if source == "snapshot":
+    if source in {"snapshot", "clickhouse_snapshot"}:
         directory = os.getenv("APP_SNAPSHOT_DIR")
     try:
         with st.spinner("Đang kiểm tra và tải dữ liệu…"):
@@ -46,13 +46,15 @@ def main():
 
     if envelope["data_source"] == "fixture":
         st.warning("DEMO — Dữ liệu tổng hợp, không phải hoạt động GitHub thực tế hoặc kết quả ML.")
+    elif source == "clickhouse_snapshot":
+        st.info("ClickHouse cục bộ · Chỉ số Gold đã đối soát với snapshot GH Archive.")
     elif envelope["data_source"] == "snapshot":
         st.info("Snapshot tĩnh từ GH Archive · Số liệu theo repo và ngày trong đợt trích xuất.")
     with st.sidebar:
         st.header("Điều hướng")
         page = st.radio("Trang", ["Overview", "Repository Explorer", "Growth Analytics"], key="page")
         st.divider()
-        st.caption(f"Nguồn: {envelope['data_source']}")
+        st.caption(f"Nguồn: {source if source == 'clickhouse_snapshot' else envelope['data_source']}")
         st.caption(f"Publication: {envelope['publication_id']}")
         st.caption(f"Công bố (UTC): {envelope['published_at']}")
         if st.button("Tải lại dữ liệu"):

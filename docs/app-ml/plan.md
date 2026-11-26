@@ -137,6 +137,8 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 **Đã tích hợp thử snapshot GH Archive:** ngày 2025-01-15 UTC cho `apache/airflow` và `apache/superset`. Đã xử lý đủ 24 tệp giờ, giữ 516 sự kiện và đối chiếu tổng event, star event, fork event từ Parquet theo giờ. Cả ba trang Streamlit đọc được snapshot. Khi có Gold live cùng scope, dùng ngày này làm ca đối soát đầu tiên.
 
+**Đã thử đọc Gold cục bộ:** `clickhouse_snapshot` đọc qua HTTP bằng tài khoản chỉ đọc và xác minh các metric theo snapshot một ngày trước khi hiển thị. [Cấu hình và giới hạn](APP-07-adapter-preparation.md#thử-nghiệm-qua-http-trên-máy-local)
+
 - [ ] Thêm adapter nguồn thật theo stack đã chọn; credentials chỉ ở phía server/cấu hình môi trường phù hợp.
 - [ ] Đọc Gold/view đúng contract, query có giới hạn ngày, sort và pagination.
 - [ ] Kiểm tra schema, kiểu dữ liệu, completeness và freshness.
