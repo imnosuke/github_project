@@ -112,3 +112,15 @@ python -m apps.streamlit.acceptance --reference PATH_TO_VERIFIED_SNAPSHOT --refe
 ```
 
 Lệnh dùng cấu hình `APP_CLICKHOUSE_*` ở phía server và in JSON. Chọn ngày đối soát nằm trong cả hai nguồn và một anchor có 60 ngày lịch sử. Mã thoát 0 yêu cầu số event/star/fork của các repo tham chiếu khớp, 60 ngày complete và có repo đủ điều kiện Growth. JSON ghi repo không khớp, ngày thiếu, số repo đủ điều kiện Growth và thời gian đọc để DE kiểm tra coverage/SLA.
+
+## Pipeline Health
+
+Đặt `APP_ENABLE_PIPELINE_FIXTURE=1` cùng `APP_DATA_SOURCE=fixture` để mở trang kiểm thử APP-10. Dữ liệu giả lập bao gồm ngày complete, lần chạy thiếu giờ rồi retry thành công, và ngày provisional khiến publication trễ. Trang giữ cả lịch sử các lần thử. Khi DE bàn giao log vận hành, đối chiếu khóa run/attempt, giờ kỳ vọng và giờ xử lý theo [checklist staging](../../docs/gharchive-streaming-staging.md).
+
+Để xem tối đa 100 lần chạy gần nhất của DAG `gharchive_to_minio_hourly` trên Airflow local dùng SQLite, xuất dữ liệu trên máy có metadata Airflow:
+
+```bash
+python airflow/scripts/export_pipeline_runs.py --database /path/to/airflow.db --output airflow/data/app10-airflow-runs.json
+```
+
+Đặt `APP_PIPELINE_RUNS_FILE` thành đường dẫn file JSON trên máy chạy Streamlit. Trang hiển thị trạng thái DAG, thời gian chạy, số giờ mục tiêu, số giờ upload xác nhận qua XCom, và số lần thử lỗi mà Airflow ghi trong `task_fail`. Mỗi run ID có một hàng, kể cả khi chạy lại cùng ngày. Khi thiếu XCom upload, số giờ upload và số giờ thiếu để trống. Có thể mở trang khi nguồn Gold chưa kết nối được. Lệnh đọc SQLite ở chế độ chỉ đọc và có thể chạy lại để cập nhật JSON. Đánh giá freshness của Gold cần dữ liệu publication và kỳ vọng vận hành do DE cung cấp.
