@@ -67,6 +67,7 @@ def test_publication_is_pinned_and_preserves_counts(publication):
 
 @pytest.mark.parametrize("change,message", [
     (lambda rows: rows["daily_data_status"].clear(), "row count differs"),
+    (lambda rows: rows["app_publications"].append(dict(rows["app_publications"][0])), "Duplicate"),
     (lambda rows: rows["repository_daily_metrics"].clear(), "row count differs"),
     (lambda rows: rows["repository_daily_metrics"][0].update(prs_merged=None), "Null required"),
     (lambda rows: rows["repository_daily_metrics"][0].update(star_events=True), "Invalid APP-02 integer"),

@@ -174,7 +174,7 @@ def audit_readiness(args):
     frames = {}
     try:
         data = Inputs.from_adapter(get_adapter(source=args.source, directory=args.snapshot_dir or args.fixture_dir))
-    except (NotImplementedError, OSError, RuntimeError) as exc:
+    except (NotImplementedError, OSError) as exc:
         report = input_error_report(config, "source_unavailable", str(exc))
     except (ValueError, KeyError, TypeError) as exc:
         report = input_error_report(config, "input_validation_failed", str(exc))

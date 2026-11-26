@@ -16,6 +16,12 @@ MANIFEST_QUERY = """
 SELECT publication_id, contract_version, published_at, expected_complete_through, start_date, end_date,
        registry_rows, metadata_rows, status_rows, metric_rows
 FROM {database:Identifier}.app_publications
+WHERE publication_id = (
+    SELECT publication_id
+    FROM {database:Identifier}.app_publications
+    ORDER BY published_at DESC, publication_id DESC
+    LIMIT 1
+)
 ORDER BY published_at DESC, publication_id DESC
 LIMIT 2
 FORMAT JSONEachRow
@@ -85,7 +91,7 @@ class ClickHousePublicationAdapter(FixtureAdapter):
         params = {"database": config.database}
         manifests = read_rows(config, MANIFEST_QUERY, params, row_limit=2)
         if not manifests:
-            raise RuntimeError("ClickHouse has no committed APP-02 publication")
+            raise OSError("ClickHouse has no committed APP-02 publication")
         manifest_columns = ("publication_id", "contract_version", "published_at",
                             "expected_complete_through", "start_date", "end_date", *ROW_COUNTS.values())
         for manifest in manifests:
