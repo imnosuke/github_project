@@ -4,9 +4,7 @@ import argparse
 from datetime import date, datetime, timezone
 import hashlib
 import json
-import os
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 
 import pandas as pd
 
@@ -14,7 +12,8 @@ from apps.streamlit.data import get_adapter
 from ml.cli import ARTIFACT_VERSION
 from ml.data import Inputs, utc_timestamp
 from ml.features import FEATURES, Ineligible, feature_row
-from ml.spec import HORIZON_DAYS, SPEC_VERSION
+from ml.publication_files import commit_exclusive
+from ml.spec import HORIZON_DAYS, SPEC_VERSION, sample_window
 from ml.training import predict
 
 
@@ -38,6 +37,11 @@ def publish_fixture(data, model_id, model, anchor, decision_at, output):
     decision = utc_timestamp(decision_at)
     if utc_timestamp(data.publication["published_at"]) > decision:
         raise ValueError("Input publication was unavailable at decision_at")
+    if decision < sample_window(anchor).feature_cutoff_exclusive:
+        raise ValueError("decision_at must be on or after the anchor's feature cutoff")
+    now = datetime.now(timezone.utc)
+    if decision > now:
+        raise ValueError("decision_at cannot be in the future")
     anchor_key = anchor.isoformat()
     if not data.lower <= anchor_key <= data.upper:
         raise ValueError("Anchor outside fixture coverage")
@@ -55,9 +59,6 @@ def publish_fixture(data, model_id, model, anchor, decision_at, output):
 
     if destination.exists():
         return existing()
-    now = datetime.now(timezone.utc)
-    if decision > now:
-        raise ValueError("decision_at cannot be in the future")
     generated = now.isoformat().replace("+00:00", "Z")
     rows = []
     for repo_id in sorted(data.scope):
@@ -72,24 +73,18 @@ def publish_fixture(data, model_id, model, anchor, decision_at, output):
             status = "ready"
             value = float(predict(model, pd.DataFrame([features]))[0])
         rows.append({**key, "prediction_publication_id": batch_id, "repository_id": repo_id,
-                     "horizon_days": HORIZON_DAYS, "decision_at": decision_at, "generated_at": generated,
+                     "horizon_days": HORIZON_DAYS, "decision_at": decision.isoformat().replace("+00:00", "Z"),
+                     "generated_at": generated,
                      "status": status, "predicted_star_events": value})
     if not rows:
         raise ValueError("No repositories were active at the anchor")
     report = {"data_source": "fixture", "key": key, "publication_id": batch_id, "generated_at": generated,
               "input_fingerprint": data.fingerprint, "rows": rows}
 
-    output.mkdir(parents=True, exist_ok=True)
-    with NamedTemporaryFile(mode="w", encoding="utf8", dir=output, prefix=".staged-", delete=False) as handle:
-        staged = Path(handle.name)
     try:
-        staged.write_text(json.dumps(report, allow_nan=False) + "\n", encoding="utf8")
-        try:
-            os.link(staged, destination)
-        except FileExistsError:
-            return existing()
-    finally:
-        staged.unlink()
+        commit_exclusive(destination, json.dumps(report, allow_nan=False) + "\n")
+    except FileExistsError:
+        return existing()
     return report
 
 

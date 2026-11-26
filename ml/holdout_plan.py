@@ -5,6 +5,7 @@ from datetime import date, timedelta
 import json
 from pathlib import Path
 
+from ml.publication_files import commit_exclusive
 from ml.spec import HORIZON_DAYS, LOOKBACK_DAYS, sample_window
 
 
@@ -39,8 +40,7 @@ def main(argv=None):
     report = plan_holdout(args.coverage_start, args.complete_through, args.publication_id)
     payload = json.dumps(report, indent=2) + "\n"
     if report["status"] == "ready":
-        with args.output.open("x", encoding="utf8") as handle:
-            handle.write(payload)
+        commit_exclusive(args.output, payload)
     print(payload, end="")
     return 0 if report["status"] == "ready" else 2
 
