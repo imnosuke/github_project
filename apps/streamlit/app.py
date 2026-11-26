@@ -30,6 +30,27 @@ def main():
     st.title("RepoScope")
     st.caption("GitHub activity · Repository Explorer · Growth Analytics")
     source = os.getenv("APP_DATA_SOURCE", "fixture")
+    pipeline_runs_file = os.getenv("APP_PIPELINE_RUNS_FILE")
+    pipeline_fixture = source == "fixture" and os.getenv("APP_ENABLE_PIPELINE_FIXTURE") == "1"
+    with st.sidebar:
+        st.header("Điều hướng")
+        pages = ["Overview", "Repository Explorer", "Growth Analytics"]
+        if pipeline_runs_file or pipeline_fixture:
+            pages.append("Pipeline Health")
+        page = st.radio("Trang", pages, key="page")
+        st.divider()
+
+    if page == "Pipeline Health":
+        if pipeline_runs_file:
+            from apps.streamlit.pipeline_runs import render_pipeline_runs
+
+            render_pipeline_runs(Path(pipeline_runs_file))
+        else:
+            from apps.streamlit.pipeline_fixture import render_pipeline_fixture
+
+            render_pipeline_fixture()
+        return
+
     directory = os.getenv("APP_FIXTURE_DIR") or str(Path(__file__).parent / "data" / "fixtures")
     if source in {"snapshot", "clickhouse_snapshot"}:
         directory = os.getenv("APP_SNAPSHOT_DIR")
@@ -57,9 +78,6 @@ def main():
     elif envelope["data_source"] == "snapshot":
         st.info("Snapshot tĩnh từ GH Archive · Số liệu theo repo và ngày trong đợt trích xuất.")
     with st.sidebar:
-        st.header("Điều hướng")
-        page = st.radio("Trang", ["Overview", "Repository Explorer", "Growth Analytics"], key="page")
-        st.divider()
         st.caption(f"Nguồn: {source if source == 'clickhouse_snapshot' else envelope['data_source']}")
         st.caption(f"Publication: {envelope['publication_id']}")
         st.caption(f"Công bố (UTC): {envelope['published_at']}")

@@ -27,6 +27,7 @@ from gharchive_extractor import (
     stream_https_to_minio_parquet,
 )
 from clickhouse_loader import load_minio_parquet_to_bronze
+from app02_publisher import publish, read_registry, scope_key
 
 logger = logging.getLogger("gharchive_medallion_dag")
 
@@ -114,6 +115,8 @@ def gharchive_medallion_pipeline():
         filter_default_repos = bool(params.get("filter_default_repos", True))
         max_records_per_file = params.get("max_records_per_file")
         upload_raw_gz = bool(params.get("upload_raw_gz", False))
+        registry_path = os.getenv("APP02_REGISTRY_FILE")
+        registry = read_registry(registry_path) if registry_path else None
 
         if custom_date:
             if custom_hour is not None:
@@ -143,6 +146,7 @@ def gharchive_medallion_pipeline():
                 "filter_default_repos": filter_default_repos,
                 "max_records_per_file": max_records_per_file,
                 "upload_raw_gz": upload_raw_gz,
+                "app02_registry": registry,
             }
 
         dt = context.get("data_interval_start") or context.get("logical_date")
@@ -157,6 +161,7 @@ def gharchive_medallion_pipeline():
             "filter_default_repos": filter_default_repos,
             "max_records_per_file": max_records_per_file,
             "upload_raw_gz": upload_raw_gz,
+            "app02_registry": registry,
         }
 
     @task(task_id="stream_gharchive_to_minio_s3")
@@ -168,6 +173,9 @@ def gharchive_medallion_pipeline():
         bucket_name = os.getenv("MINIO_BUCKET_NAME", "gharchive")
         targets = target.get("targets") or [{"date_str": target["date_str"], "hour": target["hour"]}]
         tracked_repos = list(DEFAULT_TRACKED_REPOS) if target.get("filter_default_repos") else None
+        registry = target.get("app02_registry")
+        repo_ids = {row["repository_id"] for row in registry} if registry else None
+        layer = f"bronze/events_parquet/{scope_key(registry)}" if registry else "bronze/events_parquet"
         if target.get("max_records_per_file") is not None or os.getenv("GHARCHIVE_MAX_RECORDS_PER_FILE", "").strip():
             raise ValueError("Record caps belong in the sample extractor, outside the canonical DAG")
 
@@ -187,8 +195,9 @@ def gharchive_medallion_pipeline():
                 date_str=item["date_str"],
                 hour=item["hour"],
                 bucket_name=bucket_name,
-                layer_prefix="bronze/events_parquet",
+                layer_prefix=layer,
                 tracked_repos=tracked_repos,
+                tracked_repository_ids=repo_ids,
             )
             item_uris["bronze_parquet_uri"] = res["s3_uri"]
             item_uris["records"] = res["records"]
@@ -206,6 +215,7 @@ def gharchive_medallion_pipeline():
             **target,
             "bronze_parquet_uri": uploaded_items[-1]["bronze_parquet_uri"],
             "items": uploaded_items,
+            "parquet_layer": layer,
         }
 
     @task(task_id="load_to_clickhouse_bronze")
@@ -214,13 +224,16 @@ def gharchive_medallion_pipeline():
         bucket_name = os.getenv("MINIO_BUCKET_NAME", "gharchive")
         items = meta.get("items") or [{"date_str": meta["date_str"], "hour": meta["hour"]}]
         total_inserted = 0
+        registry = meta.get("app02_registry")
+        repo_ids = {row["repository_id"] for row in registry} if registry else None
 
         for item in items:
             inserted_rows = load_minio_parquet_to_bronze(
                 date_str=item["date_str"],
                 hour=item["hour"],
                 bucket_name=bucket_name,
-                layer_prefix="bronze/events_parquet",
+                layer_prefix=meta.get("parquet_layer", "bronze/events_parquet"),
+                repository_ids=repo_ids,
             )
             if inserted_rows != item["records"]:
                 raise RuntimeError(f"Bronze count differs from uploaded Parquet for {item['date_str']}-{item['hour']}")
@@ -279,11 +292,22 @@ def gharchive_medallion_pipeline():
 
         return meta
 
+    @task(task_id="publish_app02_gold", multiple_outputs=True)
+    def task_publish_app02(meta: dict, **context) -> dict:
+        registry = meta.get("app02_registry")
+        if registry is None:
+            return {"enabled": False}
+        publication = publish(registry, meta["items"], context["run_id"],
+                              os.getenv("APP02_SCHEMA_PATH", "/opt/airflow/app-02-serving-schema.sql"),
+                              window_days=int(os.getenv("APP02_WINDOW_DAYS", "61")))
+        logger.info("APP-02 published %s from run %s", publication["publication_id"], context["run_id"])
+        return {"enabled": True, **publication}
+
     # Luồng thực thi (Pipeline Dependency): Direct HTTPS -> RAM Parquet -> MinIO S3 -> ClickHouse
     target_info = resolve_target_datetime()
     uploaded_meta = task_stream_to_minio(target_info)
     bronze_meta = task_load_clickhouse_bronze(uploaded_meta)
-    task_dbt_transform(bronze_meta)
+    task_publish_app02(task_dbt_transform(bronze_meta))
 
 
 gharchive_medallion_pipeline()

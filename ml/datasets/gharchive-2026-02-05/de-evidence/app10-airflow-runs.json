@@ -1,0 +1,109 @@
+{
+  "source": "airflow-local",
+  "exported_at": "2026-11-26T11:01:03.708131+00:00",
+  "runs": [
+    {
+      "run_id": "manual__2025-01-16T02:00:00+00:00",
+      "state": "failed",
+      "started_at": "2025-01-16T02:00:00+00:00",
+      "ended_at": "2026-11-26T10:59:26.814782+00:00",
+      "target_start": "2025-01-16 00:00Z",
+      "target_end": "2025-01-16 00:00Z",
+      "expected_hours": 1,
+      "uploaded_hours": null,
+      "missing_hours": null,
+      "missing_target_hours": null,
+      "duration_seconds": 58697966.814782,
+      "failed_attempts": 1,
+      "failure_details": [
+        {
+          "task_id": "stream_gharchive_to_minio_s3",
+          "started_at": null,
+          "ended_at": "2026-11-26T10:59:24.746605+00:00"
+        }
+      ],
+      "dbt_state": "upstream_failed",
+      "publication_id": null,
+      "task_states": [
+        {
+          "task_id": "dbt_transform_silver_gold",
+          "state": "upstream_failed"
+        },
+        {
+          "task_id": "load_to_clickhouse_bronze",
+          "state": "upstream_failed"
+        },
+        {
+          "task_id": "publish_app02_gold",
+          "state": "upstream_failed"
+        },
+        {
+          "task_id": "stream_gharchive_to_minio_s3",
+          "state": "failed"
+        }
+      ]
+    },
+    {
+      "run_id": "manual__2025-01-16T01:00:00+00:00",
+      "state": "success",
+      "started_at": "2025-01-16T01:00:00+00:00",
+      "ended_at": "2026-11-26T10:59:24.515785+00:00",
+      "target_start": "2025-01-15 00:00Z",
+      "target_end": "2025-01-15 23:00Z",
+      "expected_hours": 24,
+      "uploaded_hours": 24,
+      "missing_hours": 0,
+      "missing_target_hours": [],
+      "duration_seconds": 58701564.515785,
+      "failed_attempts": 0,
+      "failure_details": [],
+      "dbt_state": "success",
+      "publication_id": "zz-de-00000000000000000002-04904b9242ea08adc88999b13e71d43d7771d0313e9c153604ac3ab039d235f3-66e1b59f7020464e82b23a880fc2f413",
+      "task_states": [
+        {
+          "task_id": "dbt_transform_silver_gold",
+          "state": "success"
+        },
+        {
+          "task_id": "publish_app02_gold",
+          "state": "success"
+        },
+        {
+          "task_id": "stream_gharchive_to_minio_s3",
+          "state": "success"
+        }
+      ]
+    },
+    {
+      "run_id": "manual__2025-01-16T00:00:00+00:00",
+      "state": "success",
+      "started_at": "2025-01-16T00:00:00+00:00",
+      "ended_at": "2026-11-26T10:59:17.086473+00:00",
+      "target_start": "2025-01-15 00:00Z",
+      "target_end": "2025-01-15 23:00Z",
+      "expected_hours": 24,
+      "uploaded_hours": 24,
+      "missing_hours": 0,
+      "missing_target_hours": [],
+      "duration_seconds": 58705157.086473,
+      "failed_attempts": 0,
+      "failure_details": [],
+      "dbt_state": "success",
+      "publication_id": "zz-de-00000000000000000001-ee089cee7ef49a5b4293fb8658965394a44a5f74eeb44650c36cbf5f1625a742-359ecd0d2fd2475a95fcbba8f31ce1ee",
+      "task_states": [
+        {
+          "task_id": "dbt_transform_silver_gold",
+          "state": "success"
+        },
+        {
+          "task_id": "publish_app02_gold",
+          "state": "success"
+        },
+        {
+          "task_id": "stream_gharchive_to_minio_s3",
+          "state": "success"
+        }
+      ]
+    }
+  ]
+}

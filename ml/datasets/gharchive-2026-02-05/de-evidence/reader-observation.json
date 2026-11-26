@@ -1,0 +1,14 @@
+{
+  "source_name": "de-local-producer",
+  "publication_id": "zz-de-00000000000000000002-06e551e6f3eecb8d3964b7f75073c0a3756797b7127482b7bc9028a8a6adc0a4-d5530af33efe40beb511b7a43f4a598e",
+  "data_source": "live",
+  "contract_version": "1.0.0-draft",
+  "declared_published_at": "2026-11-26T10:58:02Z",
+  "observed_at": "2026-11-26T10:58:22.050036Z",
+  "date_bounds": [
+    "2025-06-19",
+    "2025-08-18"
+  ],
+  "input_fingerprint": "e2862e8fd23ed624fd3a2d6c82dd643c150b4aae5e2465529ff9e3dffd8a6c56",
+  "evidence_kind": "first_successful_endpoint_read"
+}

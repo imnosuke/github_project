@@ -1,0 +1,22 @@
+{
+  "mode": "WSL ClickHouse/dbt producer replay",
+  "fixture_data_ref": "1e205c6cbd01ee9aa39e269d70416d229236614a",
+  "publication": {
+    "publication_id": "zz-de-00000000000000000002-06e551e6f3eecb8d3964b7f75073c0a3756797b7127482b7bc9028a8a6adc0a4-d5530af33efe40beb511b7a43f4a598e",
+    "start_date": "2025-06-19",
+    "end_date": "2025-08-18",
+    "contract_version": "1.0.0-draft",
+    "expected_complete_through": null,
+    "published_at": "2026-11-26T10:58:02Z",
+    "registry_rows": 20,
+    "metadata_rows": 0,
+    "status_rows": 61,
+    "metric_rows": 1220
+  },
+  "first_publication": "zz-de-00000000000000000001-f46195809b6b3f5f33c2bce26d4d7bf0f51487f254cbaf2649a182b63481ed36-e66eb50ddfe542d0ae57b6453cd8b9eb",
+  "validated_repo_days": 1200,
+  "replayed_hours": 1463,
+  "replayed_rows": 205314,
+  "retry_before_manifest": "passed",
+  "publication_retry": "passed"
+}

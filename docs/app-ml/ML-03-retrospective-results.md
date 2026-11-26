@@ -32,3 +32,14 @@ python -m streamlit run apps/streamlit/app.py
 ```
 
 APP-07 live cần DE build lại Silver/Gold và ghi kết quả đối soát. ML-04 đã có [dự thảo contract dự đoán](ML-04-prediction-contract-draft.md) để review trước khi triển khai serving.
+
+## Holdout thứ hai
+
+Đợt đánh giá thứ hai dùng 30 anchor từ `2025-12-08` đến `2026-01-06`, với 600 mẫu trên 20 repo. Cửa sổ ảnh hưởng từ `2025-11-09` đến `2026-02-05` có đủ 2.136 giờ. Hai model được cố định từ 2.060 mẫu train của lượt trước. Giữ 26 feature hồi cứu và bỏ hai tổng PR merge vì chưa xác định được cờ merge cho một phần nguồn.
+
+| Model | MAE | RMSE |
+| --- | ---: | ---: |
+| Persistence 30 ngày | **28,07** | **39,88** |
+| Ridge, alpha = 1 | 53,79 | 75,57 |
+
+Persistence có MAE thấp hơn ở cả 30 anchor. Giữ persistence làm baseline cho bước tiếp theo. Lượt đánh giá thuộc chế độ hồi cứu theo ngày sự kiện. Nghiệm thu trên Gold và xác minh availability tại thời điểm dự đoán vẫn là điều kiện cho ML-04. [Snapshot, bản khóa và kết quả chi tiết](../../ml/datasets/gharchive-2026-02-05/README.md)

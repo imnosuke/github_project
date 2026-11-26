@@ -1,0 +1,10 @@
+{
+  "days": 89,
+  "hours": 2136,
+  "unknown_pr_pairs_with_observed_rows": 541,
+  "affected_dates": 89,
+  "affected_repositories": 20,
+  "unclassified_pr_close_events": 2255,
+  "issues_action_missing": 0,
+  "pr_action_missing": 0
+}

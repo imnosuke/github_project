@@ -1,6 +1,6 @@
-# Application data layer — APP-03
+# RepoScope — Ứng dụng Streamlit
 
-Đã có khung Streamlit local và lớp dữ liệu fixture. Chưa có live ClickHouse adapter. Fixture là dữ liệu tổng hợp, không dùng đánh giá chất lượng ML.
+MVP có Overview, Repository Explorer và Growth Analytics trên fixture hoặc publication ClickHouse theo APP-02. Fixture là dữ liệu tổng hợp, dùng để kiểm thử ứng dụng. Xem [hướng dẫn nghiệm thu và bàn giao APP-11](../../docs/app-ml/APP-11-acceptance.md) để phát lại snapshot GH Archive, kiểm tra giao diện và ghi kết quả đối soát.
 
 Chạy từ thư mục gốc repository trong môi trường Python riêng, không cài vào môi trường Airflow:
 
@@ -26,7 +26,7 @@ series = adapter.time_series(1001, "2026-10-01", "2026-11-01")
 ranking = adapter.growth_ranking("2026-11-01", window=30)
 ```
 
-Có thể truyền `directory=...` để đọc bộ fixture khác. `source="clickhouse"` kiểm tra cấu hình và báo `NotImplementedError` cho tới khi live adapter hoàn thiện. UI đọc `adapter.publication()` để gắn nhãn nguồn dữ liệu.
+Có thể truyền `directory=...` để đọc bộ fixture khác. `source="clickhouse"` kiểm tra cấu hình rồi đọc publication APP-02 đã commit. UI đọc `adapter.publication()` để gắn nhãn nguồn dữ liệu.
 
 ## Fixture
 
@@ -39,7 +39,7 @@ Có thể truyền `directory=...` để đọc bộ fixture khác. `source="cli
 
 Kết quả growth bao gồm các row không hợp lệ kèm `state`, current/delta null, xếp cuối. Consumer phải loại `insufficient_history`/`incomplete_data` khỏi bảng ranking và báo số bị loại. `new_activity` có growth_pct null; `no_activity` có growth_pct zero.
 
-Validator kiểm tra keys, coverage, scope, counts và completeness quan trọng. Đây không phải validator JSON Schema tổng quát cho dữ liệu producer bất kỳ; live adapter cần kiểm tra schema/type và snapshot consistency bổ sung. Manifest là một publication cố định cho cả bộ fixture. Chưa có UI freshness indicator hoặc live publish protocol.
+Validator kiểm tra keys, coverage, scope, counts và completeness. Adapter ClickHouse kiểm tra thêm schema, kiểu và tính nhất quán của publication. UI hiển thị freshness nếu manifest cung cấp `expected_complete_through`.
 
 Contract: [APP-02](../../docs/app-ml/APP-02-data-contract-v1.md).
 
@@ -112,3 +112,15 @@ python -m apps.streamlit.acceptance --reference PATH_TO_VERIFIED_SNAPSHOT --refe
 ```
 
 Lệnh dùng cấu hình `APP_CLICKHOUSE_*` ở phía server và in JSON. Chọn ngày đối soát nằm trong cả hai nguồn và một anchor có 60 ngày lịch sử. Mã thoát 0 yêu cầu số event/star/fork của các repo tham chiếu khớp, 60 ngày complete và có repo đủ điều kiện Growth. JSON ghi repo không khớp, ngày thiếu, số repo đủ điều kiện Growth và thời gian đọc để DE kiểm tra coverage/SLA.
+
+## Pipeline Health
+
+Đặt `APP_ENABLE_PIPELINE_FIXTURE=1` cùng `APP_DATA_SOURCE=fixture` để mở trang kiểm thử APP-10. Dữ liệu giả lập bao gồm ngày complete, lần chạy thiếu giờ rồi retry thành công, và ngày provisional khiến publication trễ. Trang giữ cả lịch sử các lần thử. Khi DE bàn giao log vận hành, đối chiếu khóa run/attempt, giờ kỳ vọng và giờ xử lý theo [checklist staging](../../docs/gharchive-streaming-staging.md).
+
+Để xem tối đa 100 lần chạy gần nhất của DAG `gharchive_to_minio_hourly` trên Airflow local dùng SQLite, xuất dữ liệu trên máy có metadata Airflow:
+
+```bash
+python airflow/scripts/export_pipeline_runs.py --database /path/to/airflow.db --output airflow/data/app10-airflow-runs.json
+```
+
+Đặt `APP_PIPELINE_RUNS_FILE` thành đường dẫn file JSON trên máy chạy Streamlit. Trang hiển thị trạng thái DAG, thời gian chạy, số giờ mục tiêu, số giờ upload xác nhận qua XCom, và số lần thử lỗi mà Airflow ghi trong `task_fail`. Mỗi run ID có một hàng, kể cả khi chạy lại cùng ngày. Khi thiếu XCom upload, số giờ upload và số giờ thiếu để trống. Có thể mở trang khi nguồn Gold chưa kết nối được. Lệnh đọc SQLite ở chế độ chỉ đọc và có thể chạy lại để cập nhật JSON. Đánh giá freshness của Gold cần dữ liệu publication và kỳ vọng vận hành do DE cung cấp.
