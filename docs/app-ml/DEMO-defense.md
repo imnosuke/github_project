@@ -10,12 +10,20 @@ python -m streamlit run apps/streamlit/retrospective_demo.py --server.address 12
 
 Demo đọc Parquet và báo cáo holdout đã lưu trong repo. Có thể chạy ngay cả khi ClickHouse và Airflow tắt.
 
+Tạo bộ dự đoán ML-04 local từ dữ liệu GH Archive đã fetch:
+
+```powershell
+python -m ml.local_batch --output ml/runs/ml04-local.json
+```
+
+Batch tính lại lượt star từ 720 tệp giờ của 30 ngày cuối snapshot đã kiểm chứng, rồi đối chiếu từng repo/ngày với bảng daily. Persistence 30 ngày tạo dự đoán cho 20 repo, lấy `2026-02-05` UTC làm mốc dữ liệu và dự đoán cửa sổ `2026-02-06` đến `2026-03-07`. Demo sẽ hiển thị file kết quả này. Với lần chạy mới, dùng thư mục hoặc tên output riêng nếu cần giữ kết quả đã có.
+
 ## Kịch bản trình bày trong 90 giây
 
 1. **Bài toán.** Dự đoán số sự kiện star của một repo trong 30 ngày dựa trên 30 ngày hoạt động trước đó. Đây là số sự kiện, không phải số star hiện có của repo.
 2. **Dữ liệu.** Holdout dùng **2.136 giờ GH Archive, 89 ngày, 20 repo**. Sau khi dựng feature và nhãn theo thời gian, tập chấm có **600 mẫu từ 30 mốc dự đoán**. Dữ liệu và bản khóa có checksum trong [bộ dữ liệu](../../ml/datasets/gharchive-2026-02-05/README.md).
 3. **Kết quả.** Chỉ biểu đồ MAE. Persistence 30 ngày đạt **28,07**, Ridge đạt **53,79**. Persistence thấp hơn ở cả 30 mốc. Chọn một repo và một ngày để trình bày dự đoán, thực tế và cửa sổ nhãn.
-4. **Phạm vi đã xác minh.** Nhóm đã chạy được pipeline Airflow → MinIO → ClickHouse/dbt → APP-02 và nghiệm thu app local trên 60 ngày Gold complete. Điểm ML được tính trên holdout hồi cứu. Luồng ML-04 đã được kiểm thử với dữ liệu QA. Bật dự đoán thật cần nghiệm thu ML-03 với evidence về thời điểm Gold khả dụng và nhãn 30 ngày.
+4. **Phạm vi đồ án local.** ML-03 đã chấm holdout hồi cứu từ dữ liệu GitHub thật. ML-04 chạy batch từ snapshot đã crawl và hiển thị dự đoán trong Streamlit local. Kết quả dựa trên mốc dữ liệu của snapshot. Ngày tạo file dự đoán là thời điểm chạy chương trình.
 
 ## Khi được hỏi về dữ liệu thiếu
 

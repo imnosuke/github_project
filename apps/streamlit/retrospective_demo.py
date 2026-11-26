@@ -41,7 +41,7 @@ def load_holdout():
 def main():
     st.set_page_config(page_title="RepoScope · Demo ML", layout="wide")
     st.title("Dự đoán star events của repository")
-    st.info("Demo hồi cứu trên GH Archive. Số liệu dự đoán và thực tế được lấy từ holdout đã khóa; nghiệm thu Gold và phục vụ dự đoán thật còn mở.")
+    st.info("Đánh giá hồi cứu và dự đoán local trên dữ liệu GH Archive đã fetch. Mỗi kết quả hiển thị theo mốc ngày của bộ dữ liệu.")
     try:
         manifest, lock, metrics, samples, names = load_holdout()
     except (OSError, ValueError, KeyError) as exc:
@@ -71,6 +71,27 @@ def main():
     st.plotly_chart(px.line(trend, x="anchor_date", y=["Thực tế", *METRICS.values()],
                            labels={"anchor_date": "Ngày chốt feature (UTC)", "value": "Star events", "variable": "Chuỗi"}),
                     width="stretch")
+
+    forecast_path = DATASET.parents[1] / "runs/ml04-local.json"
+    st.subheader("Dự đoán chạy từ snapshot đã crawl")
+    if not forecast_path.exists():
+        st.info("Chạy batch ML-04 local để tạo kết quả cho phần này.")
+        return
+    try:
+        forecast = json.loads(forecast_path.read_text(encoding="utf8"))
+        if (forecast["mode"] != "local_archive" or forecast["anchor"] != manifest["end"]
+                or forecast["input_publication"] != manifest["source_publication"]):
+            raise ValueError("Forecast refers to a different archive")
+        rows = pd.DataFrame(forecast["rows"])
+        if sorted(rows.repository_id) != lock["repository_ids"]:
+            raise ValueError("Forecast scope differs from the dataset")
+    except (OSError, ValueError, KeyError):
+        st.error("Batch dự đoán không khớp với snapshot đã crawl.")
+        return
+    st.caption(f"Persistence 30 ngày · Dữ liệu tới {forecast['anchor']} UTC · Cửa sổ {forecast['forecast_start']} → {forecast['forecast_end']} UTC")
+    st.dataframe(rows[["repository_name", "predicted_star_events"]].rename(columns={
+        "repository_name": "Repository", "predicted_star_events": "Star events dự đoán",
+    }), hide_index=True, width="stretch")
 
 
 main()
