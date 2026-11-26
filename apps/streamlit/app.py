@@ -110,12 +110,8 @@ def main():
     }[source]
     date_label = f" · {start} → {end} UTC" if page != "Growth Analytics" else ""
     st.caption(f"{source_label}{date_label}")
-    dates = pd.date_range(start, end).strftime("%Y-%m-%d")
-    selected_status = adapter.day_status(start, end)
-    unknown = len(set(dates) - set(selected_status.date))
-    incomplete = int((selected_status.status != "complete").sum()) + unknown
-    if incomplete:
-        st.warning(f"Khoảng ngày đã chọn · {incomplete} ngày chưa complete")
+    coverage_notice = st.empty()
+    coverage_start = start
 
     if page == "Overview":
         render_overview(adapter, start, end)
@@ -126,11 +122,19 @@ def main():
 
             render_predictions(adapter, end, repository_id)
     else:
-        render_growth(adapter, start, end)
+        coverage_start = render_growth(adapter, end)
         if source == "clickhouse" and os.getenv("APP_ENABLE_PREDICTIONS") == "1":
             from apps.streamlit.predictions import render_predictions
 
             render_predictions(adapter, end)
+
+    dates = pd.date_range(coverage_start, end).strftime("%Y-%m-%d")
+    selected_status = adapter.day_status(coverage_start, end)
+    unknown = len(set(dates) - set(selected_status.date))
+    incomplete = int((selected_status.status != "complete").sum()) + unknown
+    if incomplete:
+        scope = "Hai kỳ so sánh" if page == "Growth Analytics" else "Khoảng ngày đã chọn"
+        coverage_notice.warning(f"{scope} · {incomplete} ngày chưa complete")
 
     with st.expander("Trạng thái dữ liệu theo ngày"):
         st.dataframe(

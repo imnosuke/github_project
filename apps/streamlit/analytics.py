@@ -53,7 +53,7 @@ def render_overview(adapter: DataAdapter, start, end):
         st.dataframe(trend.rename(columns=OVERVIEW_METRICS), hide_index=True, width="stretch")
 
 
-def render_growth(adapter: DataAdapter, start, end):
+def render_growth(adapter: DataAdapter, end):
     window_col, rank_col = st.columns(2)
     window = window_col.selectbox("Độ dài mỗi kỳ", GROWTH_WINDOWS, index=1, format_func=lambda days: f"{days} ngày")
     anchor = pd.Timestamp(end)
@@ -80,6 +80,7 @@ def render_growth(adapter: DataAdapter, start, end):
                 .rename(columns={"repository_name": "Repo", "reason": "Lý do"}),
                 hide_index=True, width="stretch",
             )
+    return previous_start
 
 
 def render_growth_ranking(rank_col, eligible):

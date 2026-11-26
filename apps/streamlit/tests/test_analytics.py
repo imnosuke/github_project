@@ -62,3 +62,15 @@ def test_growth_sorting_options():
     app.selectbox[1].set_value("Growth % (baseline > 0)").run()
     assert not app.exception
 
+
+def test_growth_shows_completeness_for_both_periods():
+    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run()
+    app.sidebar.date_input(key="date_range").set_value((date(2026, 8, 21), date(2026, 8, 24))).run()
+    app.sidebar.radio(key="page").set_value("Growth Analytics").run()
+    app.selectbox[0].set_value(7).run()
+    assert not app.exception
+    assert any("Hai kỳ so sánh · 1 ngày chưa complete" == item.value for item in app.warning)
+    status = app.dataframe[-1].value
+    assert len(status) == 14
+    assert status.date.min() == "2026-08-11"
+

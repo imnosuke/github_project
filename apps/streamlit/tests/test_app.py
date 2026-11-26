@@ -62,3 +62,12 @@ def test_explorer_filter_and_pagination():
     assert not app.exception
     assert app.selectbox(key="detail_repo").value == 1006
     assert any("Cần ít nhất hai" in item.value for item in app.info)
+
+
+def test_explorer_preserves_disabled_comparison_when_switching_repos():
+    app = AppTest.from_file(str(APP)).run()
+    app.sidebar.radio(key="page").set_value("Repository Explorer").run()
+    app.selectbox(key="compare_repo").set_value("Không chọn").run()
+    app.selectbox(key="detail_repo").set_value(1006).run()
+    assert not app.exception
+    assert app.selectbox(key="compare_repo").value == "Không chọn"

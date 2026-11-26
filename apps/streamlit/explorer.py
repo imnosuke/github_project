@@ -24,6 +24,7 @@ DAILY_LABELS = {
     "unique_actors": "Tài khoản hoạt động",
     "unique_human_actors": "Tài khoản không gắn nhãn bot",
 }
+NO_COMPARISON = "Không chọn"
 
 
 def catalog(adapter: DataAdapter):
@@ -68,11 +69,17 @@ def render_explorer(adapter: DataAdapter, start, end):
     repo_col, compare_col = st.columns(2)
     rid = repo_col.selectbox("Repo", list(labels), format_func=labels.get, key="detail_repo")
     others = [value for value in labels if value != rid]
-    other = compare_col.selectbox(
-        "So sánh với", [None, *others], index=1 if others else 0,
-        format_func=lambda value: labels[value] if value is not None else "Không chọn",
+    compare_options = [NO_COMPARISON, *others]
+    default_choice = others[0] if others else NO_COMPARISON
+    previous_choice = st.session_state.get("compare_repo", default_choice)
+    if previous_choice not in compare_options:
+        previous_choice = default_choice
+    choice = compare_col.selectbox(
+        "So sánh với", compare_options, index=compare_options.index(previous_choice),
+        format_func=lambda value: NO_COMPARISON if value == NO_COMPARISON else labels[value],
         disabled=not others, key="compare_repo",
     )
+    other = None if choice == NO_COMPARISON else choice
     if not others:
         st.info("Cần ít nhất hai repo để so sánh.")
 
