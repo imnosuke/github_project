@@ -58,7 +58,7 @@ class ClickHouseSnapshotAdapter(SnapshotAdapter):
         return read_rows(config, GOLD_QUERY, {
             "database": config.database, "day": day, "scope": json.dumps(scope),
             "row_limit": len(scope) + 1,
-        }, row_limit=len(scope) + 1)
+        }, row_limit=len(scope))
 
 
 def _is_loopback(host):

@@ -119,13 +119,10 @@ class ClickHousePublicationAdapter(FixtureAdapter):
             query = (
                 "SELECT publication_id, " + ", ".join(columns) + " FROM {database:Identifier}." + name
                 + " WHERE publication_id = {publication:String}"
-                + (" AND date BETWEEN {start:Date} AND {end:Date}" if "date" in columns else "")
                 + " ORDER BY " + ", ".join(KEYS[name])
                 + " LIMIT {limit:UInt64} FORMAT JSONEachRow"
             )
             query_params = {**params, "publication": publication_id, "limit": limit + 1}
-            if "date" in columns:
-                query_params.update(start=start, end=end)
             rows = read_rows(config, query, query_params, row_limit=limit)
             if manifest[ROW_COUNTS[name]] is None or len(rows) != manifest[ROW_COUNTS[name]]:
                 raise ValueError(f"APP-02 row count differs from manifest: {name}")
@@ -133,6 +130,10 @@ class ClickHousePublicationAdapter(FixtureAdapter):
                 validate_row(row, ("publication_id", *columns))
                 if row.pop("publication_id") != publication_id:
                     raise ValueError("APP-02 row belongs to a different publication")
+                if "date" in columns and row["date"] not in dates:
+                    raise ValueError("APP-02 row outside publication date span")
+                if "repository_name" in columns and not (row["repository_name"] or "").strip():
+                    raise ValueError("APP-02 repository name is required")
                 if name == "daily_data_status":
                     if any(row[key] is None for key in ("expected_files", "processed_files", "quality_passed")):
                         raise ValueError("APP-02 status fields are required")
@@ -142,6 +143,7 @@ class ClickHousePublicationAdapter(FixtureAdapter):
                         raise ValueError("APP-02 day newer than its publication")
                 if name == "repository_metadata" and (
                     row["observed_at"] is None or require_utc(row["observed_at"]) > published
+                    or row["snapshot_date"] is None or row["snapshot_date"] > row["observed_at"][:10]
                 ):
                     raise ValueError("APP-02 metadata newer than its publication")
                 if name == "repository_registry" and (
@@ -149,14 +151,17 @@ class ClickHousePublicationAdapter(FixtureAdapter):
                     or row["tracking_end_date"] is not None and row["tracking_end_date"] < row["tracking_start_date"]
                 ):
                     raise ValueError("APP-02 registry interval is invalid")
-                if name == "repository_daily_metrics" and row["total_events"] is None and any(
-                    row[metric] is not None for metric in COUNTS if metric != "total_events"
-                ):
-                    raise ValueError("APP-02 metrics supplied without total_events")
+                if name == "repository_daily_metrics":
+                    total = row["total_events"]
+                    if total is None and any(row[metric] is not None for metric in COUNTS if metric != "total_events"):
+                        raise ValueError("APP-02 metrics supplied without total_events")
+                    human = row["unique_human_actors"]
+                    if human is not None and total is not None and human > total:
+                        raise ValueError("APP-02 human actor count exceeds total events")
             frame = pd.DataFrame.from_records(rows, columns=columns)
             for column in COUNT_COLUMNS.intersection(columns):
                 frame[column] = pd.array([row[column] for row in rows], dtype="Int64")
             self.tables[name] = frame
-        if self.tables["repository_registry"].empty or set(self.tables["daily_data_status"].date) != dates:
+        if self.tables["repository_daily_metrics"].empty or set(self.tables["daily_data_status"].date) != dates:
             raise ValueError("APP-02 publication has missing registry or daily status coverage")
         self.validate()

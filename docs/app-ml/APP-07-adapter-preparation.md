@@ -9,7 +9,7 @@ Ngày: 14/11/2026. Trạng thái: **chuẩn bị local**, chưa tích hợp ho�
 - Adapter gắn với một publication nhất quán. Ngày UTC inclusive; status frames và catalog trả về cho caller; catalog dùng metadata mới nhất. Overview trả tracked count theo registry giao kỳ, totals hoặc null, trend có gap cho ngày thiếu/chưa complete.
 - Phép tính Overview được chuyển nguyên vào fixture adapter; không đổi định nghĩa metric hoặc completeness. Filters, sorting và presentation vẫn nằm trong UI.
 - Có cấu hình server-side qua environment, kiểm tra host/port/TLS/timeouts/user/database; password không nằm trong repr hoặc thông báo validation.
-- Không thêm ClickHouse driver, không mở connection/query, không ánh xạ sparse Gold hoặc tự điền zero. `APP_DATA_SOURCE=clickhouse` kiểm tra cấu hình rồi báo rõ live adapter chưa implement; không fallback sang fixture.
+- `clickhouse` đọc publication APP-02 qua HTTP(S). Chế độ `clickhouse_snapshot` đọc Gold một ngày trên loopback. Cả hai yêu cầu dữ liệu đúng contract và báo lỗi nguồn rõ ràng.
 
 ## Cấu hình chạy
 
@@ -22,11 +22,11 @@ Xem `apps/streamlit/.env.example`. File mẫu **không tự được load**: exp
 | APP_CLICKHOUSE_PORT | 8443 nếu TLS; 8123 nếu không TLS; 1–65535 |
 | APP_CLICKHOUSE_USER | default; live cần tài khoản reader riêng |
 | APP_CLICKHOUSE_PASSWORD | Rỗng; cung cấp bằng cấu hình bí mật phía server |
-| APP_CLICKHOUSE_DATABASE | gold |
+| APP_CLICKHOUSE_DATABASE | `gold` cho đối soát snapshot một ngày; đặt `app_serving` khi đọc schema phục vụ APP-02 |
 | APP_CLICKHOUSE_CONNECT_TIMEOUT | 5 giây, số hữu hạn dương |
 | APP_CLICKHOUSE_QUERY_TIMEOUT | 30 giây, số hữu hạn dương |
 
-Chưa có kết nối nên chưa có bằng chứng quyền read-only. Khi triển khai live, DE phải cấp tài khoản chỉ đọc và xác minh quyền, query limits, publication consistency cùng serving mapping. Không đưa credential vào UI hoặc commit file môi trường thực.
+Đã kiểm chứng quyền SELECT bằng tài khoản riêng trên ClickHouse local. DE cần bàn giao cấu hình và bằng chứng read-only của môi trường thực.
 
 Host và port là hai biến riêng: host không nhận `localhost:8123` hoặc URL; IPv6 dùng địa chỉ thuần như `::1`. `APP_DATA_SOURCE=clickhouse` là lựa chọn backend, còn publication contract sau này vẫn dùng `data_source=live`.
 

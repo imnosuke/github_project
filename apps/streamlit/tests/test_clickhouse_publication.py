@@ -44,8 +44,6 @@ def publication(monkeypatch):
         if name != "app_publications":
             assert params["publication"] == "qa-one"
             assert params["limit"] == row_limit + 1
-            if name in {"daily_data_status", "repository_daily_metrics"}:
-                assert params["start"] == params["end"] == DAY
         result = deepcopy(rows[name])
         if name != "app_publications":
             for row in result:
@@ -75,6 +73,9 @@ def test_publication_is_pinned_and_preserves_counts(publication):
     (lambda rows: rows["app_publications"][0].update(start_date="2020-01-01"), "date span"),
     (lambda rows: rows["repository_daily_metrics"][0].update(publication_id="stale"), "different publication"),
     (lambda rows: rows["repository_daily_metrics"][0].update(total_events=None), "without total_events"),
+    (lambda rows: rows["repository_daily_metrics"][0].update(date="2025-01-14"), "outside publication"),
+    (lambda rows: rows["repository_daily_metrics"][0].update(unique_actors=None, unique_human_actors=43), "human actor"),
+    (lambda rows: rows["repository_registry"][0].update(repository_name=" "), "repository name"),
 ])
 def test_publication_fails_closed(publication, change, message):
     rows, _ = publication
