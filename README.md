@@ -94,6 +94,12 @@ Từ thư mục gốc repo, dùng Docker với Compose v2 hỗ trợ thẻ `!res
 docker compose -f docker-compose.yaml -f docker-compose.demo.yaml up -d --build
 ```
 
+Nếu Docker Engine được cài trực tiếp trong Ubuntu WSL, chạy từ PowerShell tại thư mục gốc repo.
+
+```powershell
+wsl.exe -d Ubuntu -u root -e sh -lc 'service docker start && docker compose -f docker-compose.yaml -f docker-compose.demo.yaml up -d --build'
+```
+
 Mở **http://127.0.0.1:8089/** sau khi các dịch vụ khởi động. Hai lệnh chạy Streamlit riêng được thay bằng các service trong Compose.
 
 | Đường dẫn | Giao diện |
