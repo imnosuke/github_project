@@ -86,6 +86,35 @@ final_project/
 
 ## ⚡ 3. Hướng dẫn cài đặt và chạy dự án
 
+### Demo local trên một cổng
+
+Từ thư mục gốc repo, dùng Docker với Compose v2 hỗ trợ thẻ `!reset`.
+
+```powershell
+docker compose -f docker-compose.yaml -f docker-compose.demo.yaml up -d --build
+```
+
+Mở **http://127.0.0.1:8089/** sau khi các dịch vụ khởi động. Hai lệnh chạy Streamlit riêng được thay bằng các service trong Compose.
+
+| Đường dẫn | Giao diện |
+| --- | --- |
+| `/reposcope` | Overview, Repository Explorer và Growth Analytics |
+| `/ml` | Đánh giá hồi cứu và batch dự báo 20 repo |
+| `/airflow` | Lịch sử và thao tác DAG GH Archive |
+| `/superset` | Dashboard Gold Analytics |
+| `/pipeline` | Pipeline Health từ bản xuất Airflow đã lưu |
+
+RepoScope đọc [snapshot GitHub thật đã nghiệm thu](ml/datasets/gharchive-2025-11-16/snapshot/manifest.json) lấy từ commit `1e205c6c`. ML kiểm chứng 720 tệp giờ của snapshot holdout và tạo kết quả batch khi container khởi động lần đầu. Airflow xếp một lượt fetch mẫu cho 14:00 UTC ngày 15/01/2025 khi chưa có run đó trong metadata. Lượt này xử lý dữ liệu mới tải cho Superset và pipeline, còn các dashboard snapshot có dữ liệu ngay khi Streamlit sẵn sàng.
+
+Cổng mặc định chỉ bind loopback. Có thể đặt `REPOSCOPE_DEMO_PORT` nếu 8089 đang bận. Airflow và Superset dùng thông tin đăng nhập của stack local.
+
+Khi cần xem trạng thái hoặc dừng demo, dùng cùng hai file Compose.
+
+```powershell
+docker compose -f docker-compose.yaml -f docker-compose.demo.yaml ps
+docker compose -f docker-compose.yaml -f docker-compose.demo.yaml down
+```
+
 ### Yêu cầu hệ thống
 * Đã cài đặt **Docker** và **Docker Compose** (khuyến nghị RAM trống tối thiểu $\ge$ 6GB).
 

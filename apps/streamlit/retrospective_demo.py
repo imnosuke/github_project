@@ -3,6 +3,7 @@
 from datetime import date, timedelta
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -91,7 +92,8 @@ def render_evaluation(lock, metrics, samples, names):
 
 
 def render_batch(manifest, lock):
-    forecast_path = DATASET.parents[1] / "runs/ml04-local.json"
+    default_path = DATASET.parents[1] / "runs/ml04-local.json"
+    forecast_path = Path(os.environ.get("APP_ML_BATCH_FILE", default_path))
     if not forecast_path.exists():
         st.info("Chưa có kết quả batch local.")
         return

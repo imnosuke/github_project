@@ -35,7 +35,9 @@ def main():
         pages = ["Overview", "Repository Explorer", "Growth Analytics"]
         if pipeline_runs_file or pipeline_fixture:
             pages.append("Pipeline Health")
-        page = st.radio("Trang", pages, key="page", label_visibility="collapsed")
+        pipeline_link = st.query_params.get("page") == "pipeline" and "Pipeline Health" in pages
+        page = st.radio("Trang", pages, index=pages.index("Pipeline Health") if pipeline_link else 0,
+                        key="page", label_visibility="collapsed")
         st.divider()
 
     if page == "Pipeline Health":
