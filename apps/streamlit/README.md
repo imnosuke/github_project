@@ -77,7 +77,7 @@ python -m streamlit run apps/streamlit/app.py
 
 Ví dụ dùng cổng của lượt thử APP-07. Đặt cổng và cấu hình người dùng theo ClickHouse local đang chạy. Tích hợp Gold live vẫn chờ các bảng phục vụ theo contract và xác nhận từ DE.
 
-APP-06: Growth dùng end date làm anchor, tự đọc đủ hai cửa sổ liên tiếp; start date chung chỉ áp dụng Overview/Explorer. Không công bố tổng KPI cho kỳ incomplete, không xếp hạng các repo thiếu lịch sử.
+APP-06: Growth dùng ngày kết thúc làm mốc cho hai kỳ liên tiếp; ngày bắt đầu áp dụng cho Overview/Explorer. Mốc mặc định ưu tiên ngày cuối của hai kỳ 30 ngày complete gần nhất. Nếu lịch dữ liệu chưa có đủ hai kỳ, mốc mặc định là ngày complete gần nhất. Khoảng ngày người dùng chọn được giữ khi đổi trang. KPI toàn kỳ và xếp hạng vẫn áp dụng kiểm tra completeness và lịch sử repo.
 
 ## Chuẩn bị APP-07
 

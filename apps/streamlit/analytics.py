@@ -1,9 +1,29 @@
 """Overview and growth views using contract-defined completeness rules."""
+from datetime import date, timedelta
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
 from apps.streamlit.data import DataAdapter
+
+
+OVERVIEW_METRICS = {"total_events": "Sự kiện", "star_events": "Lượt star", "fork_events": "Lượt fork"}
+GROWTH_WINDOWS = (7, 30)
+VALID_STATES = {"valid", "new_activity", "no_activity"}
+
+
+def default_date_range(adapter: DataAdapter, lower: date, upper: date, latest: str | None):
+    end = date.fromisoformat(latest) if latest else upper
+    window = GROWTH_WINDOWS[-1]
+    if latest and (end - lower).days + 1 >= 2 * window:
+        status = adapter.day_status(lower.isoformat(), latest)
+        complete = status.loc[status.status.eq("complete"), "date"]
+        calendar = pd.Series(pd.date_range(lower, end).strftime("%Y-%m-%d"))
+        eligible = calendar.isin(complete).rolling(2 * window).sum().eq(2 * window)
+        if eligible.any():
+            end = date.fromisoformat(calendar[eligible].iloc[-1])
+    return max(lower, end - timedelta(days=window - 1)), end
 
 
 def overview_data(adapter: DataAdapter, start, end):
@@ -14,109 +34,94 @@ def overview_data(adapter: DataAdapter, start, end):
 def render_overview(adapter: DataAdapter, start, end):
     tracked, totals, trend = overview_data(adapter, start, end)
     cols = st.columns(5)
-    cols[0].metric("Repositories theo dõi", f"{tracked:,}")
-    if totals is None:
-        for col, label in zip(cols[1:], ["Repos có activity", "Total events", "Star events", "Fork events"]):
-            col.metric(label, "—")
-        st.warning("KPI toàn kỳ chưa khả dụng vì thiếu dữ liệu complete. Các ngày hợp lệ vẫn xuất hiện trên biểu đồ.")
-    else:
-        for col, (field, label) in zip(cols[1:], [("active_repositories", "Repos có activity"),
-                ("total_events", "Total events"), ("star_events", "Star events"), ("fork_events", "Fork events")]):
-            col.metric(label, f"{totals[field]:,}")
+    cols[0].metric("Repo theo dõi", f"{tracked:,}", border=True)
+    for col, (field, label) in zip(cols[1:], {"active_repositories": "Repo có hoạt động", **OVERVIEW_METRICS}.items()):
+        col.metric(label, "—" if totals is None else f"{totals[field]:,}", border=True)
+
+    st.subheader("Hoạt động theo ngày")
+    metric = st.radio("Chỉ số biểu đồ", list(OVERVIEW_METRICS), format_func=OVERVIEW_METRICS.get,
+                      horizontal=True, label_visibility="collapsed", key="overview_metric")
     fig = px.line(
-        trend,
-        x="date",
-        y=["total_events", "star_events", "fork_events"],
-        markers=True,
-        labels={"value": "Số lượng sự kiện", "date": "Ngày (UTC)", "variable": "Loại sự kiện"},
-        title="Hoạt động theo ngày UTC"
+        trend, x="date", y=metric, markers=True,
+        labels={metric: OVERVIEW_METRICS[metric], "date": "Ngày (UTC)"},
     )
-    fig.for_each_trace(lambda t: t.update(name={
-        "total_events": "Total events",
-        "star_events": "Star events",
-        "fork_events": "Fork events"
-    }.get(t.name, t.name)))
+    fig.update_layout(height=320, margin=dict(l=8, r=8, t=12, b=12))
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)
     st.plotly_chart(fig, width="stretch")
-    st.caption("Tracked repos tính theo registry giao với kỳ; repos có activity tính từ event. Counts gồm bot. Không cộng daily unique actors thành unique contributors toàn kỳ.")
-    with st.expander("Dữ liệu trend"):
-        st.dataframe(trend, hide_index=True, width="stretch")
+    with st.expander("Số liệu theo ngày"):
+        st.dataframe(trend.rename(columns=OVERVIEW_METRICS), hide_index=True, width="stretch")
 
 
-def render_growth(adapter: DataAdapter, start, end):
-    st.caption("Ngày kết thúc của bộ lọc chung là anchor T. Khoảng ngày bắt đầu không giới hạn lookback: hệ thống đọc thêm kỳ trước để so sánh đúng.")
-    window = st.selectbox("Cửa sổ growth (ngày)", [7, 30], index=1)
+def render_growth(adapter: DataAdapter, end):
+    window_col, rank_col = st.columns(2)
+    window = window_col.selectbox("Độ dài mỗi kỳ", GROWTH_WINDOWS, index=1, format_func=lambda days: f"{days} ngày")
     anchor = pd.Timestamp(end)
     current_start = (anchor - pd.Timedelta(days=window-1)).strftime("%Y-%m-%d")
     previous_start = (anchor - pd.Timedelta(days=2*window-1)).strftime("%Y-%m-%d")
     previous_end = (anchor - pd.Timedelta(days=window)).strftime("%Y-%m-%d")
-    st.write(f"Kỳ hiện tại: {current_start} → {end} · Kỳ trước: {previous_start} → {previous_end} (UTC, inclusive).")
+    st.caption(f"Kỳ này {current_start} → {end} · Kỳ trước {previous_start} → {previous_end} UTC")
     result = adapter.growth_ranking(end, window)
-    valid_states = {"valid", "new_activity", "no_activity"}
-    eligible = result[result.state.isin(valid_states)].copy()
-    excluded = result[~result.state.isin(valid_states)]
-    st.caption(f"{len(eligible)} repo hợp lệ · {len(excluded)} repo bị loại do thiếu lịch sử hoặc dữ liệu chưa complete.")
-    if not excluded.empty:
-        excluded_display = excluded[["repository_id", "repository_name", "state"]].copy()
-        state_map = {
-            "insufficient_history": "Thiếu lịch sử theo dõi (chưa đủ 2× cửa sổ)",
-            "incomplete_data": "Dữ liệu chưa complete trong cửa sổ (có ngày missing/provisional)",
-        }
-        excluded_display["reason"] = excluded_display["state"].map(state_map).fillna(excluded_display["state"])
-        with st.expander(f"Repositories bị loại ({len(excluded)})", expanded=eligible.empty):
-            st.dataframe(
-                excluded_display,
-                hide_index=True,
-                width="stretch",
-                column_config={
-                    "repository_id": st.column_config.NumberColumn("ID"),
-                    "repository_name": st.column_config.TextColumn("Repository"),
-                    "state": st.column_config.TextColumn("Mã trạng thái"),
-                    "reason": st.column_config.TextColumn("Lý do loại"),
-                }
-            )
+    eligible = result[result.state.isin(VALID_STATES)].copy()
+    excluded = result[~result.state.isin(VALID_STATES)]
+    st.caption(f"{len(eligible)}/{len(result)} repo đủ dữ liệu")
     if eligible.empty:
-        st.info("Chưa có repository đủ hai cửa sổ complete để xếp hạng. Chọn ngày kết thúc khác hoặc chờ backfill.")
-        return
-    sort = st.selectbox("Xếp hạng theo", ["Star events trong kỳ", "Absolute delta", "Growth % (baseline > 0)"])
-    chart_y = "current"
-    chart_title = "Top repo · Star events trong kỳ"
+        st.info("Chưa có repository đủ dữ liệu ở cả hai kỳ.")
+    else:
+        render_growth_ranking(rank_col, eligible)
+    if not excluded.empty:
+        reason = {
+            "insufficient_history": "Thiếu lịch sử theo dõi",
+            "incomplete_data": "Dữ liệu chưa complete",
+        }
+        with st.expander(f"Repo chưa đủ dữ liệu ({len(excluded)})"):
+            st.dataframe(
+                excluded[["repository_name"]].assign(reason=excluded["state"].map(reason))
+                .rename(columns={"repository_name": "Repo", "reason": "Lý do"}),
+                hide_index=True, width="stretch",
+            )
+    return previous_start
+
+
+def render_growth_ranking(rank_col, eligible):
+    sorts = {
+        "Star events trong kỳ": ("Lượt star kỳ này", "current"),
+        "Absolute delta": ("Chênh lệch lượt star", "absolute_delta"),
+        "Growth % (baseline > 0)": ("Tăng trưởng lượt star (%)", "growth_pct"),
+    }
+    sort = rank_col.selectbox("Xếp hạng theo", list(sorts), format_func=lambda value: sorts[value][0])
+    chart_label, chart_metric = sorts[sort]
     if sort == "Absolute delta":
         eligible = eligible.sort_values(["absolute_delta", "current", "repository_id"], ascending=[False, False, True])
-        chart_y = "absolute_delta"
-        chart_title = "Top repo · Absolute delta (current − previous)"
     elif sort == "Growth % (baseline > 0)":
         eligible = eligible[eligible.previous > 0].sort_values(["growth_pct", "current", "repository_id"], ascending=[False, False, True])
-        chart_y = "growth_pct"
-        chart_title = "Top repo · Growth % (baseline > 0)"
     if eligible.empty:
-        st.info("Không có repository với baseline dương cho kiểu xếp hạng này.")
+        st.info("Không có repo đã nhận star ở kỳ trước.")
         return
-    eligible.insert(0, "rank", range(1, len(eligible)+1))
+    top = eligible.head(8)
+    st.subheader(f"Top {len(top)} repo")
+    fig = px.bar(top, x=chart_metric, y="repository_name", orientation="h",
+                 labels={chart_metric: chart_label, "repository_name": "Repo"})
+    fig.update_yaxes(title=None, autorange="reversed", automargin=True)
+    fig.update_layout(height=max(200, 38 * len(top) + 60), margin=dict(l=8, r=16, t=8, b=12))
+    st.plotly_chart(fig, width="stretch")
+
+    eligible = eligible.assign(
+        rank=range(1, len(eligible) + 1),
+        state=eligible.state.map({"valid": "Có star kỳ trước", "new_activity": "Mới có star", "no_activity": "Không có star"}),
+    )
+    st.subheader("Bảng xếp hạng")
     st.dataframe(
-        eligible,
+        eligible[["rank", "repository_name", "current", "previous", "absolute_delta", "growth_pct", "state"]],
         hide_index=True,
         width="stretch",
         column_config={
             "rank": st.column_config.NumberColumn("Hạng", format="%d"),
-            "repository_id": st.column_config.NumberColumn("ID"),
-            "repository_name": st.column_config.TextColumn("Repository"),
-            "current": st.column_config.NumberColumn("Kỳ hiện tại", format="%d"),
+            "repository_name": st.column_config.TextColumn("Repo"),
+            "current": st.column_config.NumberColumn("Kỳ này", format="%d"),
             "previous": st.column_config.NumberColumn("Kỳ trước", format="%d"),
-            "absolute_delta": st.column_config.NumberColumn("Delta", format="%+d"),
-            "growth_pct": st.column_config.NumberColumn("Growth %", format="%.1f%%"),
+            "absolute_delta": st.column_config.NumberColumn("Chênh lệch", format="%+d"),
+            "growth_pct": st.column_config.NumberColumn("Tăng trưởng", format="%.1f%%"),
             "state": st.column_config.TextColumn("Trạng thái"),
         }
     )
-    y_label = "Star events trong kỳ" if chart_y == "current" else "Absolute delta" if chart_y == "absolute_delta" else "Growth %"
-    st.plotly_chart(
-        px.bar(
-            eligible.head(20),
-            x="repository_name",
-            y=chart_y,
-            labels={"repository_name": "Repository", chart_y: y_label},
-            title=chart_title
-        ),
-        width="stretch"
-    )
-    st.caption("growth_pct = 100 × (current − previous) / previous. Baseline 0 và current > 0: new_activity, % không xác định; cả hai 0: no_activity, 0%. Đây là event analytics, không phải net stars hoặc dự đoán ML.")
-    st.caption("Tie-break: mặc định current ↓, absolute_delta ↓, ID ↑; absolute delta: delta ↓, current ↓, ID ↑; growth %: % ↓, current ↓, ID ↑.")

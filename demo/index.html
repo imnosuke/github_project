@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RepoScope</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: system-ui, sans-serif;
+      background: Canvas;
+      color: CanvasText;
+    }
+
+    body { margin: 0; }
+    main { width: min(42rem, calc(100% - 3rem)); margin: 12vh auto 3rem; }
+    h1 { margin: 0 0 1.5rem; font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -.04em; }
+    nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .75rem; }
+    a {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem;
+      color: inherit;
+      border: 1px solid color-mix(in srgb, CanvasText 24%, Canvas);
+      border-radius: .75rem;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a:hover { background: color-mix(in srgb, CanvasText 6%, Canvas); }
+    a:focus-visible { outline: 2px solid LinkText; outline-offset: 2px; }
+    code { font-weight: 400; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>RepoScope</h1>
+    <nav aria-label="Giao diện demo">
+      <a href="/reposcope/">Analytics <code>/reposcope</code></a>
+      <a href="/ml/">Dự báo lượt star <code>/ml</code></a>
+      <a href="/airflow/">Airflow <code>/airflow</code></a>
+      <a href="/superset">Superset <code>/superset</code></a>
+      <a href="/pipeline">Pipeline Health <code>/pipeline</code></a>
+    </nav>
+  </main>
+</body>
+</html>

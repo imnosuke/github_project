@@ -3,6 +3,7 @@
 from datetime import date, timedelta
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -40,42 +41,61 @@ def load_holdout():
 
 def main():
     st.set_page_config(page_title="RepoScope · Demo ML", layout="wide")
-    st.title("Dự đoán star events của repository")
-    st.info("Đánh giá hồi cứu và dự đoán local trên dữ liệu GH Archive đã fetch. Mỗi kết quả hiển thị theo mốc ngày của bộ dữ liệu.")
+    st.title("Dự báo lượt star")
     try:
         manifest, lock, metrics, samples, names = load_holdout()
     except (OSError, ValueError, KeyError) as exc:
         st.error(f"Không thể đọc bộ kết quả holdout: {exc}")
         return
 
-    indicators = st.columns(3)
-    indicators[0].metric("Repo", manifest["repos"])
-    indicators[1].metric("Giờ GH Archive", manifest["hourly_files"])
-    indicators[2].metric("Mẫu holdout", lock["rows"])
-    scores = pd.DataFrame([{"Model": label, "MAE": metrics[key]["mae"], "RMSE": metrics[key]["rmse"]}
-                           for key, label in METRICS.items()])
-    st.subheader("Sai số trên holdout")
-    st.plotly_chart(px.bar(scores, x="MAE", y="Model", orientation="h", text_auto=".2f"), width="stretch")
-    st.caption("MAE càng thấp càng tốt. Persistence lấy tổng star events của 30 ngày trước làm dự đoán cho 30 ngày sau.")
+    st.caption(f"RepoScope · GH Archive · {manifest['repos']} repo · {manifest['hourly_files']:,} giờ dữ liệu")
+    evaluation, batch = st.tabs(["Đánh giá hồi cứu", "Dự báo local"])
+    with evaluation:
+        render_evaluation(lock, metrics, samples, names)
+    with batch:
+        render_batch(manifest, lock)
 
-    repo = st.selectbox("Repository", sorted(lock["repository_ids"], key=names.get), format_func=names.get)
+
+def render_evaluation(lock, metrics, samples, names):
+    repo_col, anchor_col = st.columns(2)
+    repo = repo_col.selectbox("Repo", sorted(lock["repository_ids"], key=names.get), format_func=names.get)
     subset = samples.loc[samples.repository_id.eq(repo)].sort_values("anchor_date")
-    anchor = date.fromisoformat(st.selectbox("Ngày chốt feature (UTC)", lock["anchors"], index=len(lock["anchors"]) - 1))
+    anchor = date.fromisoformat(anchor_col.selectbox("Ngày chốt dữ liệu (UTC)", lock["anchors"],
+                                                    index=len(lock["anchors"]) - 1))
     selected = subset.loc[subset.anchor_date.eq(anchor.isoformat())].iloc[0]
-    st.caption(f"Cửa sổ cần dự đoán (UTC) {anchor + timedelta(days=1)} → {anchor + timedelta(days=30)}")
+    st.caption(f"Kỳ dự báo 30 ngày · {anchor + timedelta(days=1)} → {anchor + timedelta(days=30)} UTC")
     output = st.columns(3)
-    output[0].metric("Star events thực tế", f"{selected['target']:,.0f}")
+    output[0].metric("Lượt star thực tế", f"{selected['target']:,.0f}", border=True)
     for column, (key, label) in zip(output[1:], METRICS.items()):
-        column.metric(label, f"{selected[key]:,.2f}")
-    trend = subset.rename(columns={"target": "Thực tế", **METRICS})
-    st.plotly_chart(px.line(trend, x="anchor_date", y=["Thực tế", *METRICS.values()],
-                           labels={"anchor_date": "Ngày chốt feature (UTC)", "value": "Star events", "variable": "Chuỗi"}),
-                    width="stretch")
+        error = abs(selected[key] - selected["target"])
+        column.metric(label, f"{selected[key]:,.2f}", border=True)
+        column.caption(f"Sai số {error:,.2f} lượt star")
 
-    forecast_path = DATASET.parents[1] / "runs/ml04-local.json"
-    st.subheader("Dự đoán chạy từ snapshot đã crawl")
+    st.subheader("Sai số trung bình (MAE)")
+    st.caption(f"{lock['rows']} mẫu · Mốc dự báo {lock['anchors'][0]} → {lock['anchors'][-1]} UTC")
+    scores = pd.DataFrame([{"Mô hình": label, "MAE": metrics[key]["mae"]} for key, label in METRICS.items()])
+    chart = px.bar(scores, x="MAE", y="Mô hình", orientation="h", text_auto=".2f",
+                   labels={"MAE": "Lượt star"})
+    chart.update_yaxes(title=None, autorange="reversed", automargin=True)
+    chart.update_layout(height=180, margin=dict(l=8, r=12, t=8, b=12), bargap=0.4)
+    st.plotly_chart(chart, width="stretch")
+
+    trend = subset.rename(columns={"target": "Thực tế", **METRICS})
+    st.subheader("Dự báo theo mốc ngày")
+    chart = px.line(trend, x="anchor_date", y=["Thực tế", *METRICS.values()],
+                    labels={"anchor_date": "Ngày chốt dữ liệu (UTC)", "value": "Lượt star"})
+    chart.update_layout(height=280, margin=dict(l=8, r=8, t=12, b=12),
+                        legend=dict(orientation="h", x=0, y=1.08, title=None))
+    chart.update_xaxes(automargin=True)
+    chart.update_yaxes(automargin=True)
+    st.plotly_chart(chart, width="stretch")
+
+
+def render_batch(manifest, lock):
+    default_path = DATASET.parents[1] / "runs/ml04-local.json"
+    forecast_path = Path(os.environ.get("APP_ML_BATCH_FILE", default_path))
     if not forecast_path.exists():
-        st.info("Chạy batch ML-04 local để tạo kết quả cho phần này.")
+        st.info("Chưa có kết quả batch local.")
         return
     try:
         forecast = json.loads(forecast_path.read_text(encoding="utf8"))
@@ -88,9 +108,10 @@ def main():
     except (OSError, ValueError, KeyError):
         st.error("Batch dự đoán không khớp với snapshot đã crawl.")
         return
-    st.caption(f"Persistence 30 ngày · Dữ liệu tới {forecast['anchor']} UTC · Cửa sổ {forecast['forecast_start']} → {forecast['forecast_end']} UTC")
+    st.subheader("Persistence 30 ngày")
+    st.caption(f"Mốc dữ liệu {forecast['anchor']} · Kỳ dự báo {forecast['forecast_start']} → {forecast['forecast_end']} UTC")
     st.dataframe(rows[["repository_name", "predicted_star_events"]].rename(columns={
-        "repository_name": "Repository", "predicted_star_events": "Star events dự đoán",
+        "repository_name": "Repo", "predicted_star_events": "Lượt star dự báo",
     }), hide_index=True, width="stretch")
 
 

@@ -16,13 +16,13 @@ LABELS = {"insufficient_history": "Chưa đủ lịch sử", "incomplete_feature
 
 def render_predictions(adapter, anchor, repository_id=None):
     release = os.getenv("APP_PREDICTION_RELEASE_ID", "").strip()
-    st.subheader("Dự đoán star events trong 30 ngày")
+    st.subheader("Dự báo lượt star 30 ngày")
     try:
         max_age = float(os.environ["APP_PREDICTION_MAX_AGE_HOURS"])
         if not release or not math.isfinite(max_age) or max_age <= 0:
             raise ValueError("Prediction release and freshness are required")
     except (KeyError, ValueError):
-        st.info("Chưa cấu hình bản phát hành dự đoán hoặc SLA.")
+        st.info("Chưa có cấu hình dự báo.")
         return
     try:
         batch = read_prediction_publication(ClickHouseConfig.from_env(), anchor, release)
@@ -31,15 +31,15 @@ def render_predictions(adapter, anchor, repository_id=None):
             if generated > datetime.now(timezone.utc):
                 raise ValueError("Unexpected prediction timestamp")
     except (OSError, KeyError, TypeError, ValueError):
-        st.warning("Nguồn dự đoán tạm thời không đọc được.")
+        st.warning("Không đọc được nguồn dự báo.")
         return
     if batch is None:
-        st.info("Chưa có dự đoán cho ngày được chọn.")
+        st.info("Chưa có dự báo cho ngày đã chọn.")
         return
     last = date.fromisoformat(anchor)
     st.caption(f"Khoảng dự đoán UTC {last + timedelta(days=1)} → {last + timedelta(days=30)} · Cập nhật {generated.isoformat()}")
     if (datetime.now(timezone.utc) - generated).total_seconds() / 3600 > max_age:
-        st.warning("Bản dự đoán đã quá hạn theo SLA.")
+        st.warning("Dự báo đã quá hạn.")
         return
     rows = [row for row in batch["rows"] if repository_id is None or row["repository_id"] == repository_id]
     if not rows:

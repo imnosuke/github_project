@@ -2,6 +2,8 @@
 
 Ngày lập: **14/11/2026**. Owner: thành viên phụ trách ứng dụng/ML.
 
+**Phạm vi đồ án local, chốt ngày 26/11/2026.** Demo gồm Overview, Repository Explorer, Growth Analytics và ML-03/04 trên dữ liệu GitHub thật của 20 repo được theo dõi. APP-08 và APP-09 được hoãn khỏi phạm vi đồ án và giữ trong backlog mở rộng. Xem [hướng dẫn demo và kết quả đối chiếu ML](DEMO-defense.md).
+
 Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thiết kế; APP-02 hoàn tất draft phía ứng dụng, chờ DE xác nhận**. APP-03–06 hoàn tất fixture/local; phần chuẩn bị APP-07 đã merge; biên bản triển khai publication và nghiệm thu live được theo dõi ở mục cuối. **ML-01 hoàn tất thiết kế local**: regression star events 30 ngày, baseline, eligibility và time split có purge được kiểm chứng bằng code. **ML-02 hoàn tất local**: feature builder và train/evaluate CLI đã chạy trên fixture, chưa nghiệm thu khả thi hoặc model trên Gold thật.
 
 - [APP-01 — Phạm vi và stack](APP-01-scope-and-stack.md).
@@ -16,7 +18,7 @@ Trạng thái cập nhật 14/11/2026: **APP-01 hoàn tất quyết định thi�
 
 Phát triển một ứng dụng phân tích GitHub sử dụng dữ liệu Gold từ pipeline của thành viên DE. Có thể làm trước bằng fixture cùng hợp đồng dữ liệu, sau đó thay bằng nguồn thật theo từng mốc.
 
-Bản đầu gồm **Overview, Repository Explorer và Growth Analytics**. Các module tiếp theo gồm Ecosystem Comparison, Technology Radar, Repository Health, Contributor Analytics và ML Trending Prediction. Dữ liệu vận hành do DE cung cấp; phía ứng dụng có thể làm màn hình Pipeline Health khi contract sẵn sàng.
+Bản đầu gồm **Overview, Repository Explorer và Growth Analytics**. Demo local bổ sung phần dự đoán star events 30 ngày của ML-03/04. Pipeline Health đọc dữ liệu vận hành do DE cung cấp. Ecosystem Comparison, Technology Radar, Repository Health và Contributor Analytics thuộc backlog mở rộng.
 
 Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ liệu cho ứng dụng, logic phân tích đã thống nhất, feature engineering, training, evaluation và batch inference. DE sở hữu ingestion, raw/Silver/Gold, backfill, completeness và hạ tầng pipeline. Việc ghi prediction về serving và orchestration inference cần hai bên thống nhất.
 
@@ -155,6 +157,10 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 
 #### APP-08 — Ecosystem Comparison và Technology Radar
 
+**Trạng thái: Hoãn khỏi đồ án local.** Mẫu gồm 20 repo đã được chọn, phần lớn là công cụ đã nổi tiếng. Các snapshot lịch sử hỗ trợ phân tích tăng trưởng trong kỳ quan sát. Radar để phát hiện repo mới và xu hướng hiện tại cần registry đa dạng hơn cùng dữ liệu cập nhật định kỳ. Repository Explorer đã có luồng so sánh hai repo phục vụ demo.
+
+**Nếu mở lại:**
+
 - [ ] Nhận registry/category/ecosystem cùng quy tắc repo thuộc nhiều nhóm.
 - [ ] So sánh ecosystem trên cửa sổ thời gian giống nhau.
 - [ ] Chốt công thức momentum, chuẩn hóa, trọng số và ngưỡng Radar.
@@ -167,6 +173,10 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 **Dependency:** APP-07; metadata và ecosystem aggregates từ DE.
 
 #### APP-09 — Repository Health và Contributor Analytics
+
+**Trạng thái: Hoãn khỏi đồ án local.** Dữ liệu hiện có hỗ trợ phân tích hoạt động và lượt quay lại giữa hai kỳ. Health score, tỷ lệ merge đầy đủ và cohort dài hạn cần thêm dữ liệu hoặc định nghĩa metric. Overview, Explorer và Growth đã đáp ứng phần phân tích của demo.
+
+**Nếu mở lại:**
 
 - [ ] Chốt định nghĩa contribution, new/returning, retention, concentration và maintenance.
 - [ ] Xác định facts/aggregates bổ sung cho PR, issue, release và actor–repo activity.
@@ -281,7 +291,7 @@ Phần việc này sở hữu giao diện, lớp truy xuất/phục vụ dữ li
 | M1 — Nền tảng | APP-01 → APP-03 | Scope, contract draft, fixture và adapter |
 | M2 — Demo ứng dụng | APP-04 → APP-06 | Overview, Explorer, Growth trên fixture |
 | M3 — MVP dùng dữ liệu thật | APP-07 + APP-11 | Kết nối Gold, đối soát, tài liệu và demo local |
-| M4 — Analytics mở rộng | APP-08/09/10 | Mỗi module có dataset và công thức phù hợp |
+| M4 — Analytics mở rộng | APP-10, APP-08/09 trong backlog | APP-08/09 được hoãn khỏi đồ án local |
 | M5 — ML thật | ML-01 → ML-04 | Đánh giá hợp lệ, batch output, hiển thị prediction |
 
 ML-01/02 có thể làm song song với M2. APP-08/09/10 không bắt buộc hoàn thành trước ML nếu dữ liệu ML đã đủ. Bắt đầu bằng **APP-01 và APP-02**, sau đó APP-03; chưa cần xây mọi màn hình hoặc chọn model ngay.
@@ -298,4 +308,4 @@ ML-01/02 có thể làm song song với M2. APP-08/09/10 không bắt buộc ho�
 1. DE chạy staging và bàn giao APP-02 theo [publication Gold](APP-02-data-contract-v1.md#11-phương-án-triển-khai-gold-qua-publication). APP chạy đối soát ngày 2025-01-15 UTC và kiểm tra NULL của chỉ số PR.
 2. APP-07/APP-11 kiểm thử Explorer, Overview và Growth với publication có đủ 60 ngày. Ghi kết quả về scope, metric, freshness, xử lý mất nguồn và thời gian truy vấn. MVP analytics có thể nghiệm thu sau bước này.
 3. ML-03 nhận lịch sử Gold và mốc publication thực. Chốt holdout trước khi fit. Lưu model đã nghiệm thu và phiên bản schema để ML-04 chạy batch và publish. Trong lúc chờ, rà soát khóa rerun, trạng thái thiếu feature và yêu cầu provenance của [ML-04](ML-04-prediction-contract-draft.md).
-4. APP-08 đợi category/ecosystem, APP-09 đợi facts PR/issue/release và actor–repo, APP-10 đợi dữ liệu vận hành gồm lần chạy, coverage theo giờ, lỗi, duration và test results. Xác minh giao diện với fixture trước khi dữ liệu thật được bàn giao.
+4. Xác minh APP-10 với dữ liệu vận hành gồm lần chạy, độ phủ theo giờ, lỗi, thời lượng và kết quả test khi các bản ghi sẵn sàng.

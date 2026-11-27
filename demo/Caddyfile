@@ -1,0 +1,35 @@
+{
+	admin off
+}
+
+:8080 {
+	redir /reposcope /reposcope/ 308
+	redir /ml /ml/ 308
+	redir /airflow /airflow/ 308
+	redir /pipeline /reposcope/?page=pipeline 302
+
+	@superset_entry path /superset /superset/
+	redir @superset_entry /superset/dashboard/gharchive-gold-analytics/ 302
+
+	handle / {
+		root * /srv
+		file_server
+	}
+
+	handle /reposcope/* {
+		reverse_proxy demo-reposcope:8501
+	}
+
+	handle /ml/* {
+		reverse_proxy demo-ml:8501
+	}
+
+	handle /airflow/* {
+		reverse_proxy airflow-webserver:8080
+	}
+
+	# Superset 3.1 uses native root-level routes for login, APIs, and static assets.
+	handle {
+		reverse_proxy superset:8088
+	}
+}

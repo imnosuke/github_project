@@ -22,17 +22,9 @@ Radar categories và health/momentum scores cần có công thức, ngưỡng v�
 
 ## Phạm vi bản đầu
 
-Ưu tiên **Executive Overview + Repository Explorer + Growth Analytics**.
+Phạm vi đồ án local gồm **Executive Overview, Repository Explorer, Growth Analytics và demo ML-03/04** trên dữ liệu thật. Ecosystem Comparison, Technology Radar, Repository Health và Contributor Analytics được hoãn và giữ trong [kế hoạch APP/ML](app-ml/plan.md#giai-đoạn-d--analytics-mở-rộng).
 
 Gold hiện có hỗ trợ một phần activity và daily metrics. Metadata, rolling growth và completeness cần DE bổ sung. Giao diện có thể phát triển trước bằng fixture tuân thủ schema, ghi rõ dữ liệu demo.
-
-Thứ tự mở rộng đề xuất:
-
-1. Explorer và overview.
-2. Growth analytics.
-3. Ecosystem comparison và Technology Radar khi có metadata.
-4. Health và Contributor Analytics khi metric/facts đủ rõ.
-5. ML khi có lịch sử và chất lượng dữ liệu phù hợp.
 
 Operations dashboard làm song song với pipeline: DE cung cấp dữ liệu vận hành, phía ứng dụng có thể phụ trách hiển thị.
 

@@ -10,11 +10,11 @@ from time import perf_counter
 from streamlit.testing.v1 import AppTest
 
 from apps.streamlit.acceptance import METRICS, check_publication
+from apps.streamlit.analytics import OVERVIEW_METRICS
 from apps.streamlit.data import get_adapter
 
 
 APP = Path(__file__).with_name("app.py")
-METRIC_LABELS = dict(zip(METRICS, ("Total events", "Star events", "Fork events")))
 
 
 def require(condition, message):
@@ -41,8 +41,8 @@ def check_ui(adapter, anchor, incomplete_day, timeout):
     run(app, "initial_render")
     publication = adapter.publication()
     captions = {item.value for item in app.sidebar.caption}
-    require(f"Publication: {publication['publication_id']}" in captions and
-            f"Nguồn: {publication['data_source']}" in captions,
+    require(f"Bản dữ liệu · {publication['publication_id']}" in captions and
+            f"Nguồn dữ liệu · {publication['data_source']}" in captions,
             "UI loaded a different publication from the acceptance check")
 
     dates = (anchor, anchor)
@@ -51,7 +51,7 @@ def check_ui(adapter, anchor, incomplete_day, timeout):
     totals = adapter.overview(day, day)["totals"]
     displayed = {metric.label: metric.value for metric in app.metric}
     require(totals is not None and all(displayed.get(label) == f"{totals[field]:,}"
-                                     for field, label in METRIC_LABELS.items()),
+                                     for field, label in OVERVIEW_METRICS.items()),
             "Overview did not display the accepted event, star and fork totals")
 
     run(app.sidebar.radio(key="page").set_value("Repository Explorer"), "explorer")
@@ -68,7 +68,7 @@ def check_ui(adapter, anchor, incomplete_day, timeout):
     require(app.sidebar.date_input(key="date_range").value == dates, "Growth lost the shared date range")
     expected = adapter.growth_ranking(day, 30)
     eligible = int(expected[["current", "previous"]].notna().all(axis=1).sum())
-    require(eligible > 0 and any(item.value.startswith(f"{eligible} repo hợp lệ") for item in app.caption),
+    require(eligible > 0 and any(item.value == f"{eligible}/{len(expected)} repo đủ dữ liệu" for item in app.caption),
             "Growth did not display the eligible repositories for the 30-day comparison")
 
     if incomplete_day is not None:
@@ -77,9 +77,9 @@ def check_ui(adapter, anchor, incomplete_day, timeout):
         run(app.sidebar.radio(key="page").set_value("Overview"), "return_to_overview")
         run(app.sidebar.date_input(key="date_range").set_value((incomplete_day, incomplete_day)), "incomplete_day")
         displayed = {metric.label: metric.value for metric in app.metric}
-        require(all(displayed.get(label) == "—" for label in METRIC_LABELS.values()),
+        require(all(displayed.get(label) == "—" for label in OVERVIEW_METRICS.values()),
                 "Overview exposed event totals on an incomplete day")
-        require(any("KPI toàn kỳ chưa khả dụng" in item.value for item in app.warning),
+        require(any("chưa complete" in item.value for item in app.warning),
                 "Overview did not explain why totals are unavailable")
 
     return {

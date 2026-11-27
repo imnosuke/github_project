@@ -1,0 +1,22 @@
+[
+  {"repository_id": 33884891, "repository_name": "apache/airflow", "tracking_start_date": "2015-04-13"},
+  {"repository_id": 39464018, "repository_name": "apache/superset", "tracking_start_date": "2015-07-21"},
+  {"repository_id": 17165658, "repository_name": "apache/spark", "tracking_start_date": "2014-02-25"},
+  {"repository_id": 2211243, "repository_name": "apache/kafka", "tracking_start_date": "2011-08-15"},
+  {"repository_id": 158256479, "repository_name": "apache/iceberg", "tracking_start_date": "2018-11-19"},
+  {"repository_id": 60246359, "repository_name": "ClickHouse/ClickHouse", "tracking_start_date": "2016-06-02"},
+  {"repository_id": 53548867, "repository_name": "dbt-labs/dbt", "tracking_start_date": "2016-03-10"},
+  {"repository_id": 138754790, "repository_name": "duckdb/duckdb", "tracking_start_date": "2018-06-26"},
+  {"repository_id": 166515022, "repository_name": "trinodb/trino", "tracking_start_date": "2019-01-19"},
+  {"repository_id": 263727855, "repository_name": "pola-rs/polars", "tracking_start_date": "2020-05-13"},
+  {"repository_id": 858127, "repository_name": "pandas-dev/pandas", "tracking_start_date": "2010-08-24"},
+  {"repository_id": 908607, "repository_name": "numpy/numpy", "tracking_start_date": "2010-09-13"},
+  {"repository_id": 843222, "repository_name": "scikit-learn/scikit-learn", "tracking_start_date": "2010-08-17"},
+  {"repository_id": 65600975, "repository_name": "pytorch/pytorch", "tracking_start_date": "2016-08-13"},
+  {"repository_id": 45717250, "repository_name": "tensorflow/tensorflow", "tracking_start_date": "2015-11-07"},
+  {"repository_id": 155220641, "repository_name": "huggingface/transformers", "tracking_start_date": "2018-10-29"},
+  {"repository_id": 136202695, "repository_name": "mlflow/mlflow", "tracking_start_date": "2018-06-05"},
+  {"repository_id": 204086862, "repository_name": "streamlit/streamlit", "tracking_start_date": "2019-08-24"},
+  {"repository_id": 160919119, "repository_name": "fastapi/fastapi", "tracking_start_date": "2018-12-08"},
+  {"repository_id": 90194616, "repository_name": "pydantic/pydantic", "tracking_start_date": "2017-05-03"}
+]

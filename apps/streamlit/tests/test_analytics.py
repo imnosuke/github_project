@@ -1,10 +1,12 @@
 from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 
+import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from apps.streamlit.analytics import overview_data
+from apps.streamlit.analytics import default_date_range, overview_data
 from apps.streamlit.data import FixtureAdapter
 from apps.streamlit.data.generate_fixture import generate
 
@@ -25,6 +27,13 @@ def test_overview_counts_and_gap(adapter):
     _, totals, trend = overview_data(adapter, "2026-08-14", "2026-08-16")
     assert totals is None
     assert trend.loc[trend.date == "2026-08-15", "star_events"].isna().all()
+
+
+def test_default_window_finds_latest_two_complete_periods_across_a_gap():
+    lower, upper = date(2025, 1, 1), date(2025, 3, 12)
+    complete = pd.date_range(lower, upper).strftime("%Y-%m-%d").drop("2025-03-02")
+    adapter = SimpleNamespace(day_status=lambda start, end: pd.DataFrame({"date": complete, "status": "complete"}))
+    assert default_date_range(adapter, lower, upper, upper.isoformat()) == (date(2025, 1, 31), date(2025, 3, 1))
 
 
 def test_ranking_order_and_zero_states(adapter):
@@ -52,4 +61,16 @@ def test_growth_sorting_options():
     assert not app.exception
     app.selectbox[1].set_value("Growth % (baseline > 0)").run()
     assert not app.exception
+
+
+def test_growth_shows_completeness_for_both_periods():
+    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run()
+    app.sidebar.date_input(key="date_range").set_value((date(2026, 8, 21), date(2026, 8, 24))).run()
+    app.sidebar.radio(key="page").set_value("Growth Analytics").run()
+    app.selectbox[0].set_value(7).run()
+    assert not app.exception
+    assert any("Hai kỳ so sánh · 1 ngày chưa complete" == item.value for item in app.warning)
+    status = app.dataframe[-1].value
+    assert len(status) == 14
+    assert status.date.min() == "2026-08-11"
 
