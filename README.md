@@ -38,18 +38,43 @@ docker compose -f docker-compose.yaml -f docker-compose.demo.yaml down
 
 Trên PowerShell với Docker Engine trong Ubuntu WSL, thêm `wsl.exe -d Ubuntu -u root -e` trước các lệnh `docker compose` ở trên. `airflow-init`, `minio-init` và `demo-first-run` là các job khởi tạo một lần. `Exited (0)` là trạng thái thành công của các job này.
 
-## Pipeline dữ liệu
+## Kiến trúc
 
-```text
-GH Archive (JSON gzip theo giờ)
-  → Airflow lọc theo danh sách repo và ghi Parquet vào MinIO/Silo
-  → ClickHouse Bronze
-  → dbt Silver và Gold, sau đó chạy dbt test
-      ├─ Superset đọc Gold
-      └─ Airflow công bố APP-02 khi DAG có registry
+### Topology dịch vụ local
+
+```mermaid
+flowchart LR
+    Browser["Trình duyệt · 127.0.0.1:8089"] --> Gateway["Caddy"]
+    Gateway -->|/airflow| Airflow["Airflow webserver"]
+    Gateway -->|/superset| Superset["Superset"]
+    Gateway -->|"/reposcope · /pipeline"| RepoScope["Streamlit RepoScope"]
+    Gateway -->|/ml| ML["Streamlit ML"]
+
+    Airflow --> PostgreSQL["PostgreSQL · metadata Airflow"]
+    Scheduler["Airflow scheduler · LocalExecutor"] --> PostgreSQL
+    Scheduler --> Silo["MinIO / Silo · Parquet"]
+    Scheduler --> ClickHouse["ClickHouse · Bronze / Silver / Gold"]
+    Superset -->|truy vấn Gold| ClickHouse
+    RepoScope --> AnalyticsSnapshot["Snapshot phân tích · 20 repo"]
+    RepoScope --> RunExport["Bản xuất Airflow đã lưu"]
+    ML --> MLSnapshot["Snapshot ML và batch local"]
+```
+
+### Luồng dữ liệu Medallion
+
+```mermaid
+flowchart TD
+    Archive["GH Archive · JSON gzip theo giờ"] -->|Airflow tải, lọc repo và chuyển đổi| Silo["MinIO / Silo · Parquet theo giờ"]
+    Silo -->|Airflow nạp dữ liệu| Bronze["ClickHouse Bronze · gharchive_events"]
+    Bronze -->|dbt chuẩn hóa và khử trùng lặp| Silver["ClickHouse Silver · stg_gharchive_events"]
+    Silver -->|dbt tổng hợp| Gold["ClickHouse Gold · repo, actor và giờ"]
+    Gold -->|truy vấn Gold| Superset["Superset · Gold Analytics"]
+    Gold -->|Airflow công bố sau dbt test khi có registry| Publication["app_serving · publication APP-02"]
 ```
 
 Stack ghép Airflow 2.9.3 (LocalExecutor), PostgreSQL cho metadata, Silo tương thích S3, ClickHouse 24.3, dbt Core 1.8.8 với dbt-clickhouse 1.8.4, Superset 3.1.3, Streamlit và Caddy.
+
+## Pipeline dữ liệu
 
 DAG `gharchive_to_minio_hourly` có lịch theo giờ và tắt catchup. Khi demo khởi động, `demo-first-run` xếp một lượt fetch cho **14:00 UTC ngày 15/01/2025** nếu run `reposcope-demo__2025-01-15T14` chưa tồn tại. Demo bật publication APP-02 bằng registry gồm 20 repo.
 
