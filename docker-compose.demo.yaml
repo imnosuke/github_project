@@ -18,12 +18,15 @@ services:
     ports: !reset []
     environment:
       AIRFLOW__WEBSERVER__BASE_URL: http://127.0.0.1:${REPOSCOPE_DEMO_PORT:-8089}/airflow
+      AIRFLOW__WEBSERVER__WORKERS: '2'
     healthcheck:
       test: ["CMD-SHELL", "curl --fail http://localhost:8080/airflow/health || exit 1"]
 
   airflow-scheduler:
     environment:
       AIRFLOW__WEBSERVER__BASE_URL: http://127.0.0.1:${REPOSCOPE_DEMO_PORT:-8089}/airflow
+      AIRFLOW__CORE__PARALLELISM: '2'
+      AIRFLOW__SCHEDULER__PARSING_PROCESSES: '1'
       APP02_REGISTRY_FILE: /opt/airflow/demo/registry.json
     volumes:
       - ./demo/registry.json:/opt/airflow/demo/registry.json:ro
