@@ -44,7 +44,7 @@ DBT_PROJECT_DIR = "/opt/airflow/dbt_gharchive"
 @dag(
     dag_id="gharchive_to_minio_hourly",
     description="Pipeline GH Archive -> MinIO Parquet -> ClickHouse (Bronze -> dbt Silver -> dbt Gold)",
-    schedule="@hourly",
+    schedule=os.getenv("GHARCHIVE_DAG_SCHEDULE", "@hourly") or None,
     start_date=datetime(2025, 1, 1),
     catchup=False,
     max_active_runs=1,

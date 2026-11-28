@@ -44,8 +44,15 @@ services:
     depends_on:
       airflow-scheduler:
         condition: service_started
+      clickhouse:
+        condition: service_healthy
+    environment:
+      APP_SNAPSHOT_DIR: /opt/airflow/datasets/gharchive-2026-07-21/snapshot
+      APP02_SCHEMA_PATH: /opt/airflow/app-02-serving-schema.sql
     volumes:
       - ./demo/queue_ingest.py:/opt/airflow/demo/queue_ingest.py:ro
+      - ./ml/datasets:/opt/airflow/datasets:ro
+      - ./docs/app-ml/app-02-serving-schema.sql:/opt/airflow/app-02-serving-schema.sql:ro
     command: ["python", "/opt/airflow/demo/queue_ingest.py"]
     restart: "no"
 
@@ -60,8 +67,8 @@ services:
     <<: *demo-streamlit
     environment:
       APP_DATA_SOURCE: snapshot
-      APP_SNAPSHOT_DIR: /workspace/ml/datasets/gharchive-2025-11-16/snapshot
-      APP_PIPELINE_RUNS_FILE: /workspace/ml/datasets/gharchive-2026-02-05/de-evidence/app10-airflow-runs.json
+      APP_SNAPSHOT_DIR: /workspace/ml/datasets/gharchive-2026-07-21/snapshot
+      APP_PIPELINE_RUNS_FILE: /workspace/ml/datasets/gharchive-2026-07-21/de-evidence/app10-airflow-runs.json
     command:
       - python
       - -m
@@ -74,6 +81,7 @@ services:
     <<: *demo-streamlit
     environment:
       APP_ML_BATCH_FILE: /tmp/ml04-local.json
+      APP_SNAPSHOT_DIR: /workspace/ml/datasets/gharchive-2026-07-21/snapshot
     command:
       - /bin/sh
       - -ec

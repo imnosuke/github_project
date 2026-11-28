@@ -12,6 +12,7 @@ import streamlit as st
 
 
 DATASET = Path(__file__).resolve().parents[2] / "ml/datasets/gharchive-2026-02-05"
+UNIFIED_SNAPSHOT = Path(__file__).resolve().parents[2] / "ml/datasets/gharchive-2026-07-21/snapshot"
 METRICS = {"persistence": "Persistence 30 ngày", "ridge": "Ridge"}
 
 
@@ -49,11 +50,13 @@ def main():
         return
 
     st.caption(f"RepoScope · GH Archive · {manifest['repos']} repo · {manifest['hourly_files']:,} giờ dữ liệu")
-    evaluation, batch = st.tabs(["Đánh giá hồi cứu", "Dự báo local"])
+    evaluation, batch, latest = st.tabs(["Đánh giá hồi cứu", "Dự báo local", "Dự báo mới nhất"])
     with evaluation:
         render_evaluation(lock, metrics, samples, names)
     with batch:
         render_batch(manifest, lock)
+    with latest:
+        render_latest_snapshot_forecast(names)
 
 
 def render_evaluation(lock, metrics, samples, names):
@@ -113,6 +116,90 @@ def render_batch(manifest, lock):
     st.dataframe(rows[["repository_name", "predicted_star_events"]].rename(columns={
         "repository_name": "Repo", "predicted_star_events": "Lượt star dự báo",
     }), hide_index=True, width="stretch")
+
+
+def render_latest_snapshot_forecast(names):
+    snapshot_dir = Path(os.environ.get("APP_SNAPSHOT_DIR", str(UNIFIED_SNAPSHOT)))
+    manifest_path = snapshot_dir / "manifest.json"
+    if not manifest_path.exists():
+        st.info("Chưa có snapshot mở rộng cho dự báo mới nhất.")
+        return
+    try:
+        snap_manifest = json.loads(manifest_path.read_text(encoding="utf8"))
+        for fname, expected_sha in (snap_manifest.get("files") or {}).items():
+            actual_sha = hashlib.sha256((snapshot_dir / fname).read_bytes()).hexdigest()
+            if actual_sha != expected_sha:
+                raise ValueError(f"Checksum mismatch for {fname}")
+        status = pd.read_parquet(snapshot_dir / "daily_data_status.parquet")
+        metrics_df = pd.read_parquet(snapshot_dir / "repository_daily_metrics.parquet")
+        registry = pd.read_parquet(snapshot_dir / "repository_registry.parquet")
+    except (OSError, ValueError, KeyError) as exc:
+        st.error(f"Không thể đọc snapshot mở rộng: {exc}")
+        return
+
+    full_days = set(status.loc[status["processed_files"].eq(24), "date"])
+    if not full_days:
+        st.info("Snapshot chưa có đủ dữ liệu 24/24 giờ.")
+        return
+    anchor = date.fromisoformat(max(full_days))
+    window_dates = [(anchor - timedelta(days=offset)).isoformat() for offset in range(29, -1, -1)]
+    missing_in_window = [d for d in window_dates if d not in full_days]
+    if missing_in_window:
+        st.warning(f"Cửa sổ 30 ngày gần nhất còn thiếu {len(missing_in_window)} ngày chưa đủ 24 giờ.")
+        return
+
+    window_df = metrics_df.loc[metrics_df["date"].isin(window_dates)]
+    repo_names = registry.set_index("repository_id")["repository_name"].to_dict() or names
+    preds = (
+        window_df.groupby("repository_id", as_index=False)["star_events"]
+        .sum()
+        .assign(repository_name=lambda df: df["repository_id"].map(repo_names))
+        .sort_values(["star_events", "repository_id"], ascending=[False, True])
+    )
+    forecast_start = anchor + timedelta(days=1)
+    forecast_end = anchor + timedelta(days=30)
+
+    st.subheader("Persistence 30 ngày từ dữ liệu mới nhất")
+    st.caption(
+        f"Snapshot {snap_manifest['from']} → {snap_manifest['through']} UTC · "
+        f"Cửa sổ đầu vào {window_dates[0]} → {window_dates[-1]} · "
+        f"Kỳ dự báo {forecast_start} → {forecast_end} UTC"
+    )
+    summary = st.columns(3)
+    summary[0].metric("Mốc dữ liệu mới nhất", f"{anchor} UTC", border=True)
+    summary[1].metric("Tổng star dự báo (20 repo)", f"{int(preds['star_events'].sum()):,}", border=True)
+    summary[2].metric("Repo dẫn đầu", str(preds.iloc[0]["repository_name"]), border=True)
+
+    st.dataframe(
+        preds[["repository_name", "star_events"]].rename(
+            columns={"repository_name": "Repo", "star_events": "Lượt star dự báo (30 ngày tới)"}
+        ),
+        hide_index=True,
+        width="stretch",
+    )
+
+    # Reconcile 2026-02-05 batch forecast against actual crawled 2026-02-06..2026-03-07
+    eval_dates = [(date(2026, 2, 6) + timedelta(days=i)).isoformat() for i in range(30)]
+    if all(d in full_days for d in eval_dates):
+        in_dates = [(date(2026, 1, 7) + timedelta(days=i)).isoformat() for i in range(30)]
+        if all(d in full_days for d in in_dates):
+            pred_feb = metrics_df.loc[metrics_df["date"].isin(in_dates)].groupby("repository_id")["star_events"].sum()
+            actual_feb = metrics_df.loc[metrics_df["date"].isin(eval_dates)].groupby("repository_id")["star_events"].sum()
+            comp = pd.DataFrame({"pred": pred_feb, "actual": actual_feb}).fillna(0)
+            comp["abs_err"] = (comp["pred"] - comp["actual"]).abs()
+            mae = float(comp["abs_err"].mean())
+            wape = float(100.0 * comp["abs_err"].sum() / max(comp["actual"].sum(), 1))
+            with st.expander("Đối chiếu thực tế kỳ 2026-02-06 → 2026-03-07 UTC (từ dữ liệu backfill)"):
+                c1, c2 = st.columns(2)
+                c1.metric("MAE thực tế", f"{mae:,.2f} star/repo", border=True)
+                c2.metric("WAPE thực tế", f"{wape:,.2f}%", border=True)
+                table = (
+                    comp.reset_index()
+                    .assign(Repo=lambda df: df["repository_id"].map(repo_names))
+                    .sort_values("actual", ascending=False)[["Repo", "pred", "actual", "abs_err"]]
+                    .rename(columns={"pred": "Dự báo", "actual": "Thực tế", "abs_err": "Sai số tuyệt đối"})
+                )
+                st.dataframe(table, hide_index=True, width="stretch")
 
 
 main()
