@@ -77,10 +77,13 @@ def select_gold(start, end, registry):
         SELECT event_date AS date, repo_id AS repository_id, count() AS pushes,
             if(countIf(isNull(size) OR size < 0) = 0, sum(size), NULL) AS commits_pushed
         FROM (
-            SELECT toDate(parseDateTimeBestEffortOrZero(created_at, 'UTC')) AS event_date, repo_id,
+            SELECT event_id,
+                   toDate(parseDateTimeBestEffortOrZero(created_at, 'UTC')) AS event_date, repo_id,
                    toInt64OrNull(JSONExtractRaw(payload_json, 'size')) AS size
-            FROM bronze.gharchive_events FINAL
+            FROM bronze.gharchive_events
             WHERE event_type = 'PushEvent' AND event_id != '' AND ifNull(repo_name, '') != '' AND {where}
+            ORDER BY _ingested_at DESC
+            LIMIT 1 BY event_id
         ) GROUP BY event_date, repo_id
     """))
     for row in quality:
